@@ -23,4 +23,4 @@ abstract: >-
   Withdrawal": cash and debt identities, minimum-equity linear program, credit-to-equity
   substitution index (CES/ISC), directional shadow price of credit capacity, infeasibility
   diagnosis and the automated consistency tests of Section 9 and Appendix A.
-repository-code: "https://github.com/<user>/xfr-engine"
+repository-code: "https://github.com/mariodealencar1006-cloud/xfr-engine"
