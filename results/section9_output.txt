@@ -1,0 +1,47 @@
+=== XFR-IA — motor determinístico — exemplo da seção 9 ===
+E*(base)   = 0.4000   (manuscrito: 0,40)
+E*(choque) = 1.0000   (manuscrito: 1,00)
+ΔA = 0.70  ->  ISC = 0.8571   (manuscrito: 0,857)
+forma fechada 1 − juros/ΔA = 0.8571   | preço-sombra π(linha, mês 2): LP = 0.8571, esq. = 0.8571, dir. = 0.8571
+
+Tabela 8 (mês | FCO | serviço | saque | juros | caixa base | caixa choque)
+    1 |  -0.25 |   0.20 |  -0.00 |   0.00 |   0.75 |   1.35
+    2 |  -0.25 |   0.20 |   0.70 |   0.02 |   0.98 |   0.90
+    3 |   0.05 |   0.20 |  -0.00 |   0.02 |   0.81 |   0.75
+    4 |   0.05 |   0.20 |  -0.00 |   0.02 |   0.64 |   0.60
+    5 |   0.05 |   0.20 |  -0.00 |   0.02 |   0.47 |   0.45
+    6 |   0.05 |   0.20 |  -0.00 |   0.02 |   0.30 |   0.30
+
+restrições ativas (base):   {'credit': ['credit[linha_rotativa,2]'], 'blocked': ['credit[linha_rotativa,1]', 'credit[linha_rotativa,3]', 'credit[linha_rotativa,4]', 'credit[linha_rotativa,5]', 'credit[linha_rotativa,6]'], 'ceiling': [], 'floor': ['floor[6]'], 'other': []}
+restrições ativas (choque): {'credit': [], 'blocked': ['credit[linha_rotativa,1]', 'credit[linha_rotativa,2]', 'credit[linha_rotativa,3]', 'credit[linha_rotativa,4]', 'credit[linha_rotativa,5]', 'credit[linha_rotativa,6]'], 'ceiling': [], 'floor': ['floor[6]'], 'other': []}
+preço-sombra da reserva L_t (base):   [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+identidades fechadas: base=True  choque=True
+
+--- variantes ---
+linha rotativa (H = 0,70) meses 2–6:  E* = 0.3528, saque = [-0.0, 0.05, 0.16, 0.16, 0.17, 0.17], ISC = 0.9246
+terminalidade (quitar no mês 6):     E* = 1.0000, saque = [-0.0, -0.0, -0.0, 0.0, 0.0, 0.0], ISC = 0.0000
+choque com teto E0 ≤ 0,50:            status = infeasible; relaxamento mínimo = {'status': 'relaxed', 'min_total_shortfall': 1.0999999999999999, 'shortfall_by_period': {3: 0.04999999999999993, 4: 0.19999999999999996, 5: 0.35, 6: 0.5}, 'E0_used': 0.5}
+caixa inicial −0,10:                  E* = 0.5000 (Δ = +0.1000)
+etapa 2, orçamento E0 ≤ E*+0,30, κ=0: E0 = 0.7000, saque = [-0.0, 0.35, -0.0, -0.0, -0.0, -0.0], juros totais = 0.0500
+etapa 2, idem, κ_equity = 0,05/u.m.:  E0 = 0.7000, saque = [-0.0, 0.35, -0.0, -0.0, -0.0, -0.0], objetivo = 0.0850
+
+--- curva E*(A) no mês 2 e Proposições 1–2 ---
+  A = 0.00  E* = 1.0000  π_LP = 1.0000  π_esq = nan  π_dir = 0.8571
+  A = 0.05  E* = 0.9571  π_LP = 0.8571  π_esq = 0.8571  π_dir = 0.8571
+  A = 0.10  E* = 0.9143  π_LP = 0.8571  π_esq = 0.8571  π_dir = 0.8571
+  A = 0.15  E* = 0.8714  π_LP = 0.8571  π_esq = 0.8571  π_dir = 0.8571
+  A = 0.20  E* = 0.8286  π_LP = 0.8571  π_esq = 0.8571  π_dir = 0.8571
+  A = 0.25  E* = 0.7857  π_LP = 0.8571  π_esq = 0.8571  π_dir = 0.8571
+  A = 0.30  E* = 0.7429  π_LP = 0.8571  π_esq = 0.8571  π_dir = 0.8571
+  A = 0.35  E* = 0.7000  π_LP = 0.8571  π_esq = 0.8571  π_dir = 0.8571
+  A = 0.40  E* = 0.6571  π_LP = 0.8571  π_esq = 0.8571  π_dir = 0.8571
+  A = 0.45  E* = 0.6143  π_LP = 0.8571  π_esq = 0.8571  π_dir = 0.8571
+  A = 0.50  E* = 0.5714  π_LP = 0.8571  π_esq = 0.8571  π_dir = 0.8571
+  A = 0.55  E* = 0.5286  π_LP = 0.8571  π_esq = 0.8571  π_dir = 0.8571
+  A = 0.60  E* = 0.4857  π_LP = 0.8571  π_esq = 0.8571  π_dir = 0.8571
+  A = 0.65  E* = 0.4429  π_LP = 0.8571  π_esq = 0.8571  π_dir = 0.8571
+  A = 0.70  E* = 0.4000  π_LP = 0.8571  π_esq = 0.8571  π_dir = 0.8571
+  {'P1_nonincreasing': True, 'P1_convex': True, 'P2_holds': True, 'P2_violations': [], 'n_points': 15}
+reprodutível: True
+
+resultados gravados em results/section9.json
