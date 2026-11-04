@@ -23,7 +23,7 @@ test" of Section 9 of the paper (Appendix A describes the implementation).
 | Propositions 1–2, numerical verification on a grid | `metrics.estar_curve`/`proposition_checks` · `directional.estar_curve_q`/`proposition_checks_q` |
 | Section 6.9 terminality and infeasibility diagnosis (minimum relaxation) | `Firm.terminal_repay`, `solver.diagnose_infeasibility` |
 | Section 9.2 closed form `1 − charges/q` | `metrics.closed_form_isc` |
-| Tests of Section 9, Appendix A.1 and the directional form | `tests/` (26 automated cases) |
+| Tests of Section 9, Appendix A.1 and the directional form | `tests/` (26 automated cases; 36 with the institutional layer) |
 | Explanation layer (binding constraints, blocked instruments) | `Solution.binding` |
 
 Solver: linear programming with HiGHS (`scipy.optimize.linprog`). Dependencies: `numpy`, `scipy`;
@@ -74,6 +74,32 @@ Variants reported in Section 9.2 of the paper:
 * **Degeneracy**: at q = q_max (A = 0) the multiplier returned by HiGHS (1.00) is an admissible subgradient
   but differs from the left-hand derivative (0.857); Proposition 2 is therefore stated in one-sided
   derivatives and the engine reports both.
+
+## v0.3.0 — institutional layer (companion paper, Article 2)
+
+`xfr_engine/institutional.py` adds, on top of the Article 1 core, the institutional layer of the companion
+paper: corporate tax T_t on taxable income, deductible interest with an optional cap κ_I (IRC §163(j)),
+loss-offset limit κ_P (Brazil 30% / U.S. 80%), interest on equity (JCP) with its TJLP base and the 50%
+profit / 50% retained-earnings ceiling (Lei 9.249/1995 art. 9, as restricted in 2023–2025), withholding θ,
+JCP paid in cash or credited-and-capitalized, the interest-rate process of the line (interest channel) and a
+DIP instrument available only in the recovery state (q > 0). Deterministic single scenario, solved as a
+mixed-integer LP (HiGHS via `scipy.optimize.milp`); binaries only for the sign of taxable income and the
+JCP-ceiling branch. With the layer switched off the problem reduces to the Article 1 LP and reproduces its
+values exactly (`tests/test_institutional.py`).
+
+Two metrics are reported together and never added: the CES/ISC (quantity of equity per unit of credit
+withdrawn) and the net cost of substitution CLS = [C*(q) − C*(0)]/q (economic cost per unit withdrawn).
+
+```bash
+python -m xfr_engine.experiment_I --out results     # Tables 5–6, hypothesis checks, DIP sweep, figure
+pytest -q                                           # 36 tests
+```
+
+Experiment I on the Article 1 synthetic example (results/experiment_I.md): with instruments held fixed, the
+CES is lower in the loss regime than in the profit regime in both jurisdictions (H1); without DIP the
+Brazilian CES is below the U.S. one, because credit is dearer net of tax (H2a), and the sign flips once U.S.
+DIP replaces more than about a third of the withdrawn capacity (H2b); the JCP contribution to the
+profit-versus-loss difference-in-differences of CLS is positive but small over a six-month horizon (H3).
 
 ## Limits of this version
 
