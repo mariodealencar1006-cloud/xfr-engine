@@ -1,4 +1,4 @@
-"""ISC (eq. 7), forma fechada (seção 9.2), curva E*(A), checagens de identidade (Apêndice B.1),
+"""ISC (eq. 7), forma fechada (seção 9.2), curva E*(A), checagens de identidade (Apêndice A.1),
 simulação direta de caixa (teste 9.3-iii) e verificação numérica das Proposições 1–2 (seção 6.10)."""
 from __future__ import annotations
 
@@ -135,7 +135,7 @@ def simulate_forward(firm: Firm, E0: float, D: List[List[float]]) -> Dict[str, L
 
 
 def check_identities(firm: Firm, sol: Solution, tol: float = 1e-7) -> Dict[str, object]:
-    """Apêndice B.1: identidades de caixa e dívida fechadas; D ≤ A; B ≤ H; C ≥ L; nada sacado de
+    """Apêndice A.1: identidades de caixa e dívida fechadas; D ≤ A; B ≤ H; C ≥ L; nada sacado de
     instrumento bloqueado (A = 0)."""
     f = firm.resolved(); T = f.T
     sim = simulate_forward(f, sol.E0, sol.D)

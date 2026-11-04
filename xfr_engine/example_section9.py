@@ -8,6 +8,7 @@ import argparse
 import copy
 import hashlib
 import json
+import math
 
 from .model import Firm, Instrument
 from .solver import solve_min_equity, solve_min_cost, diagnose_infeasibility
@@ -128,6 +129,17 @@ def run(verbose: bool = True) -> dict:
     return out
 
 
+def json_safe(v):
+    """Troca NaN/±inf por None: internamente NaN marca "não definido", mas não é JSON válido."""
+    if isinstance(v, dict):
+        return {k: json_safe(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [json_safe(x) for x in v]
+    if isinstance(v, float) and not math.isfinite(v):
+        return None
+    return v
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", help="grava os resultados em JSON")
@@ -135,7 +147,7 @@ def main():
     out = run()
     if a.json:
         with open(a.json, "w", encoding="utf-8") as fh:
-            json.dump(out, fh, ensure_ascii=False, indent=2, default=str)
+            json.dump(json_safe(out), fh, ensure_ascii=False, indent=2, default=str, allow_nan=False)
         print(f"\nresultados gravados em {a.json}")
 
 

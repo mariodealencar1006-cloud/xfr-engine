@@ -1,4 +1,4 @@
-"""XFR-IA — motor financeiro determinístico (Apêndice B do manuscrito).
+"""XFR-IA — motor financeiro determinístico (Apêndice A do manuscrito).
 
 Implementa as identidades (1)–(3), a reserva mínima (4) em versão determinística,
 o problema de aporte mínimo (6), o ISC (7) e o preço-sombra do crédito (10)
