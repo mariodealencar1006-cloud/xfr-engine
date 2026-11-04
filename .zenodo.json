@@ -1,7 +1,7 @@
 {
-  "title": "xfr-engine: deterministic financial engine for the shadow price of credit (v0.2.0)",
+  "title": "xfr-engine: deterministic financial engine for the shadow price of credit",
   "upload_type": "software",
-  "description": "Python implementation of the mathematical core of the manuscript 'The Shadow Price of Credit: An Explainable-AI Decision-Support System for Corporate Recapitalization under Credit-Line Withdrawal' (M. de Alencar Netto, 2026): cash and debt identities, minimum-equity linear program (HiGHS), credit-to-equity substitution index (CES/ISC), directional shadow price of credit capacity, infeasibility diagnosis, and 26 automated consistency tests reproducing Section 9 and Appendix A of the paper.",
+  "description": "Python implementation of the mathematical core of the manuscript 'The Shadow Price of Credit: An Explainable-AI Decision-Support System for Corporate Recapitalization under Credit-Line Withdrawal' (M. de Alencar Netto, 2026): cash and debt identities, minimum-equity linear program (HiGHS), credit-to-equity substitution index (CES/ISC), directional shadow price of credit capacity, infeasibility diagnosis, and 26 automated consistency tests covering Section 9, Appendix A and the directional form of the paper.",
   "creators": [{"name": "de Alencar Netto, Mario", "affiliation": "XMA Capital S.A., Palhoça, SC, Brazil", "orcid": "0009-0006-8673-3919"}],
   "license": "MIT",
   "keywords": ["corporate finance", "financial restructuring", "shadow price of credit", "linear programming", "decision support", "explainable AI"],

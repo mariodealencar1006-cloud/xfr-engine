@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it together with the manuscript."
 title: "xfr-engine: deterministic financial engine for the shadow price of credit"
 version: 0.2.0
-date-released: 2026-11-03
+date-released: 2026-11-04
 license: MIT
 type: software
 authors:
@@ -22,5 +22,5 @@ abstract: >-
   An Explainable-AI Decision-Support System for Corporate Recapitalization under Credit-Line
   Withdrawal": cash and debt identities, minimum-equity linear program, credit-to-equity
   substitution index (CES/ISC), directional shadow price of credit capacity, infeasibility
-  diagnosis and the automated consistency tests of Section 9 and Appendix A.
+  diagnosis and the automated consistency tests of Section 9, Appendix A and the directional form.
 repository-code: "https://github.com/mariodealencar1006-cloud/xfr-engine"

@@ -23,7 +23,7 @@ test" of Section 9 of the paper (Appendix A describes the implementation).
 | Propositions 1–2, numerical verification on a grid | `metrics.estar_curve`/`proposition_checks` · `directional.estar_curve_q`/`proposition_checks_q` |
 | Section 6.9 terminality and infeasibility diagnosis (minimum relaxation) | `Firm.terminal_repay`, `solver.diagnose_infeasibility` |
 | Section 9.2 closed form `1 − charges/q` | `metrics.closed_form_isc` |
-| Section 9.3 and Appendix A.1 tests | `tests/` (26 automated cases) |
+| Tests of Section 9, Appendix A.1 and the directional form | `tests/` (26 automated cases) |
 | Explanation layer (binding constraints, blocked instruments) | `Solution.binding` |
 
 Solver: linear programming with HiGHS (`scipy.optimize.linprog`). Dependencies: `numpy`, `scipy`;
