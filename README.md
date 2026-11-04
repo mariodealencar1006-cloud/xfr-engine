@@ -35,6 +35,7 @@ Solver: linear programming with HiGHS (`scipy.optimize.linprog`). Dependencies: 
 pip install -e .
 python -m xfr_engine.example_section9                 # reproduces Section 9 and the variants
 python -m xfr_engine.example_section9 --json results/section9.json
+pip install pytest                                    # only needed for the tests
 pytest -q                                             # 26 tests
 ```
 
