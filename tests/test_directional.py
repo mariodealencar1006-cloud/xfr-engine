@@ -1,4 +1,4 @@
-"""Directional parameterization (Sections 6.6 / 6.10 of the manuscript, v0.6)."""
+"""Directional parameterization (Sections 6.6 / 6.10 of the manuscript)."""
 import math
 import pytest
 from xfr_engine import q_max, firm_at_q, pi_directional, ces, estar_curve_q, proposition_checks_q, solve_min_equity
@@ -48,7 +48,10 @@ def test_two_period_direction_counts_capacity_once():
     q_max is the smaller of the two availabilities, and the CES stays well defined."""
     f = firm_base()
     f.instruments[0].A = [0, 0.70, 0.70, 0, 0, 0]
+    f.instruments[0].H = 0.70                 # one commitment: the balance cannot exceed it across the two months
     h2 = {("linha_rotativa", 2): 1.0, ("linha_rotativa", 3): 1.0}
     assert abs(q_max(f, h2) - 0.70) < TOL
+    assert max(solve_min_equity(f).B[0]) <= 0.70 + TOL
     r = ces(f, h2, 0.70)
-    assert r.status == "defined" and r.ces >= 0
+    assert r.status == "defined" and abs(r.E_shock - 1.00) < TOL
+    assert r.pi_0_right - 1e-5 <= r.ces <= r.pi_q_left + 1e-5

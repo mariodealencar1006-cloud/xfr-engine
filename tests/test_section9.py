@@ -154,7 +154,7 @@ def test_a1_explanation_consistency_blocked_instrument_not_recommended(shock):
     assert max(s.D[0]) < TOL
 
 
-# ---------------------------------------------------------------- etapa 2 (eq. 8 determinística)
+# ---------------------------------------------------------------- etapa 2 (eq. 9 determinística)
 def test_stage2_min_cost_prefers_equity_when_equity_is_free(base):
     sb = solve_min_equity(base)
     sc = solve_min_cost(base, E0_budget=sb.E0 + 0.30, kappa_equity=0.0)
