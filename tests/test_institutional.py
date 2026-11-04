@@ -104,3 +104,16 @@ def test_experiment_report_runs():
     assert out["H2"]["holds_part_a"] and out["H2"]["sign_flips_with_dip"]
     assert all(h["holds"] for h in out["H1"].values())
     assert out["H3"]["holds"]
+
+
+def test_panel_runner_matches_experiment(tmp_path):
+    """O executor em lote (painel CSV) reproduz o Experimento I para o painel sintético de exemplo."""
+    import csv
+    from xfr_engine.panel import run_panel
+    rows = list(csv.DictReader(open("docs/painel_exemplo.csv", encoding="utf-8")))
+    res = run_panel(rows, c_E=0.15)
+    assert all(r["status"] == "ok" for r in res)
+    br = next(r for r in res if r["firm_id"] == "SYN-BR-lucro" and r["config"] == "no_dip")
+    assert br["ISC"] == pytest.approx(0.9, abs=1e-3)
+    off = next(r for r in res if r["firm_id"] == "SYN-US-prejuizo" and r["config"] == "all_off")
+    assert off["ISC"] == pytest.approx(0.857142857, abs=1e-6)
