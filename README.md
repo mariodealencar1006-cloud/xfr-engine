@@ -84,7 +84,10 @@ the LP dual is no longer the shadow price (Section 6.10).
 
 ## Citation
 
-See `CITATION.cff`. Please cite the software release (Zenodo DOI) together with the manuscript.
+See `CITATION.cff`. Please cite the software release together with the manuscript:
+
+* **v0.2.0**: [10.5281/zenodo.23955232](https://doi.org/10.5281/zenodo.23955232)
+* **All versions** (resolves to the latest): [10.5281/zenodo.23955231](https://doi.org/10.5281/zenodo.23955231)
 
 ## License
 
