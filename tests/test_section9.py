@@ -1,4 +1,4 @@
-"""Testes unitários das seções 9.3 e B.1 do manuscrito, executados no motor determinístico.
+"""Testes unitários das seções 9.3 e A.1 do manuscrito, executados no motor determinístico.
 Rodar:  pytest -q
 """
 import copy
@@ -108,15 +108,15 @@ def test_93_v_reproducibility(base):
     assert h(firm_base()) == h(firm_base())
 
 
-# ---------------------------------------------------------------- Apêndice B.1 — testes automáticos
-def test_b1_identities_hold_in_all_periods(base, shock):
+# ---------------------------------------------------------------- Apêndice A.1 — testes automáticos
+def test_a1_identities_hold_in_all_periods(base, shock):
     for f in (base, shock):
         s = solve_min_equity(f)
         chk = check_identities(f, s)
         assert chk["passed"], chk
 
 
-def test_b1_draw_respects_capacity_and_balance_respects_ceiling(base):
+def test_a1_draw_respects_capacity_and_balance_respects_ceiling(base):
     g = copy.deepcopy(base)
     g.instruments[0].A = [0, 0.70, 0.70, 0.70, 0.70, 0.70]
     g.instruments[0].H = 0.70
@@ -127,27 +127,27 @@ def test_b1_draw_respects_capacity_and_balance_respects_ceiling(base):
     assert check_identities(g, s)["passed"]
 
 
-def test_b1_monotonicity_and_convexity_propositions(base):
+def test_a1_monotonicity_and_convexity_propositions(base):
     grid = [0.05 * k for k in range(0, 15)]
     curve = estar_curve(base, "linha_rotativa", grid, period=2)
     chk = proposition_checks(curve)
     assert chk["P1_nonincreasing"] and chk["P1_convex"] and chk["P2_holds"], chk
 
 
-def test_b1_terminality_changes_the_answer(base, shock):
+def test_a1_terminality_changes_the_answer(base, shock):
     """Seção 6.9: exigir quitação no horizonte torna a linha inútil neste exemplo (ISC = 0)."""
     g = copy.deepcopy(base); g.terminal_repay = True
     s = solve_min_equity(g)
     assert s.ok() and abs(s.E0 - 1.00) < TOL and max(s.D[0]) < TOL
 
 
-def test_b1_solver_states_are_distinct(shock):
+def test_a1_solver_states_are_distinct(shock):
     g = copy.deepcopy(shock); g.E0_max = 0.50
     assert solve_min_equity(g).status == "infeasible"
     assert solve_min_equity(shock).status == "optimal"
 
 
-def test_b1_explanation_consistency_blocked_instrument_not_recommended(shock):
+def test_a1_explanation_consistency_blocked_instrument_not_recommended(shock):
     s = solve_min_equity(shock)
     assert s.binding["credit"] == []                     # nenhum limite "usado"
     assert len(s.binding["blocked"]) == 6                # linha bloqueada em todos os meses
