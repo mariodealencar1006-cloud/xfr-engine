@@ -3,7 +3,7 @@ message: "If you use this software, please cite it together with the manuscript.
 title: "xfr-engine: deterministic financial engine for the shadow price of credit"
 version: 0.3.0
 date-released: 2026-11-04
-doi: 10.5281/zenodo.23955232
+doi: 10.5281/zenodo.23964137
 identifiers:
   - type: doi
     value: 10.5281/zenodo.23955231
