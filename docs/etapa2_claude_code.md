@@ -55,7 +55,9 @@ python -m xfr_engine.panel data/panel/painel_BR_US.csv --out results/panel/exper
 
 ## 5. Agregação (Tabelas 5–6 em dados reais)
 - Por `country × regime × config`: mediana e média de ISC e CLS; proporção de `status == undefined/infeasible`.
-- Decomposição por canal como em `xfr_engine/experiment_I.py` (uma regra de cada vez), por regime.
+- Decomposição por canal como em `xfr_engine/experiment_I.py` (uma regra de cada vez), por regime. No painel a
+  taxa da linha é a observada da firma, então o canal de juros é medido por contrafactual: rodar cada firma
+  também com a taxa mediana da outra jurisdição na mesma data (`line_rate` trocado) e tomar a diferença.
 - Intervalos: bootstrap em blocos por firma (1.000 reamostragens), com semente fixa registrada.
 - H1: ISC(prejuízo) − ISC(lucro) por país, `config = no_dip`.  H2: ISC_BR − ISC_US em prejuízo, `no_dip` e `all_on`.
   H3: DiD do CLS entre prejuízo e lucro, `all_on` menos `no_jcp`.

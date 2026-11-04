@@ -115,5 +115,8 @@ def test_panel_runner_matches_experiment(tmp_path):
     assert all(r["status"] == "ok" for r in res)
     br = next(r for r in res if r["firm_id"] == "SYN-BR-lucro" and r["config"] == "no_dip")
     assert br["ISC"] == pytest.approx(0.9, abs=1e-3)
-    off = next(r for r in res if r["firm_id"] == "SYN-US-prejuizo" and r["config"] == "all_off")
+    off = next(r for r in res if r["firm_id"] == "SYN-BR-prejuizo" and r["config"] == "all_off")
     assert off["ISC"] == pytest.approx(0.857142857, abs=1e-6)
+    # no painel a taxa da linha é a observada da firma: desligar a regra "rate" não a altera
+    us_off = next(r for r in res if r["firm_id"] == "SYN-US-prejuizo" and r["config"] == "all_off")
+    assert us_off["ISC"] == pytest.approx(0.928571429, abs=1e-6)
