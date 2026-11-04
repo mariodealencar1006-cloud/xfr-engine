@@ -19,8 +19,8 @@ class ISCResult:
     E_base: Optional[float]
     E_shock: Optional[float]
     delta_A: float
-    pi_base: Optional[float] = None      # preço-sombra no caso-base (derivada lateral esquerda de −E*)
-    pi_shock: Optional[float] = None     # preço-sombra no caso-choque (derivada lateral direita)
+    pi_base: Optional[float] = None      # multiplicador LP de D≤A no caso-base; em vértice degenerado pode diferir das derivadas laterais
+    pi_shock: Optional[float] = None     # idem no caso-choque (seção 9: 1,00, contra derivada lateral direita de 0,857)
     note: str = ""
 
 

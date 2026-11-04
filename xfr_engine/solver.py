@@ -1,4 +1,4 @@
-"""Programa linear do problema de aporte mínimo (eq. 6) e da escolha de custo (eq. 8, versão
+"""Programa linear do problema de aporte mínimo (eq. 6) e da escolha de custo (eq. 9, versão
 determinística), com extração dos multiplicadores (eq. 10) — HiGHS via scipy.optimize.linprog.
 
 Layout do vetor de decisão x:
@@ -189,7 +189,7 @@ def solve_min_equity(firm: Firm) -> Solution:
 
 
 def solve_min_cost(firm: Firm, E0_budget: float, kappa_equity: float = 0.0) -> Solution:
-    """Etapa 2 (seção 5.5 / eq. 8 determinística): dado um orçamento de aporte, minimiza
+    """Etapa 2 (seção 5.5 / eq. 9 determinística): dado um orçamento de aporte, minimiza
     juros totais + encargos de contratação + kappa_equity·E0 (custo de oportunidade do equity)."""
     f, T, J, oD, oB, n, (A_eq, b_eq, _), (A_ub, b_ub, ub_lab), bounds = _build(firm)
     c = np.zeros(n); c[0] = kappa_equity

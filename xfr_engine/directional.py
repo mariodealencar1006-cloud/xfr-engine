@@ -1,4 +1,4 @@
-"""Directional withdrawal parameterization (manuscript Sections 6.6 and 6.10, v0.6).
+"""Directional withdrawal parameterization (manuscript Sections 6.6 and 6.10).
 
 A(q) = A_base − q·h, with q ≥ 0 a scalar withdrawal magnitude and h ≥ 0 a fixed direction over
 (instrument, period) pairs. CES(q;h) = [E*(q) − E*(0)] / q (eq. 7); the directional shadow price
