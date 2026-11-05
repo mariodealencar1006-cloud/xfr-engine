@@ -120,3 +120,84 @@ def test_panel_runner_matches_experiment(tmp_path):
     # no painel a taxa da linha é a observada da firma: desligar a regra "rate" não a altera
     us_off = next(r for r in res if r["firm_id"] == "SYN-US-prejuizo" and r["config"] == "all_off")
     assert us_off["ISC"] == pytest.approx(0.928571429, abs=1e-6)
+
+
+def test_panel_uses_r_tjlp_column():
+    """A coluna opcional r_tjlp substitui a TJLP mensal do default (painel trimestral) e só afeta o Brasil."""
+    from xfr_engine.panel import run_panel
+    base = dict(firm_id="X", period_end="2024-12-31", regime="lucro", data_class="P", T="4", C0="0.05", L="0.02", S="0.02",
+                line_A="0.10", line_rate="0.03", q_frac="1", LA0="0.5", PF0="0", PL0="0.5",
+                **{f"fco_{t}": "-0.01" for t in range(1, 5)}, **{f"pi_{t}": "0.05" for t in range(1, 5)})
+    def jcp(country, r=None):
+        row = dict(base, country=country, **({"r_tjlp": r} if r else {}))
+        return next(x for x in run_panel([row], c_E=0.10) if x["config"] == "all_on")["JCP_shock"]
+    assert jcp("BR", "0.03") > jcp("BR")          # TJLP trimestral > mensal default
+    assert jcp("US", "0.03") == jcp("US") == 0    # sem JCP nos EUA
+
+
+def test_negative_equity_base_forces_equity_so_panel_must_clamp():
+    """Com PL0 < 0, a base do JCP força E0 ≥ −PL0 no motor: o painel deve entregar PL0 ≥ 0."""
+    from xfr_engine.institutional import Regime, default_jurisdictions, solve_min_equity_inst
+    from xfr_engine.model import Firm, Instrument
+    line = Instrument("linha", A=[0, 0.1, 0, 0], rate=0.03, interest_on="end")
+    firm = Firm(T=4, C0=1.0, FCO=[0.1] * 4, S=0.0, L=0.0, instruments=[line])
+    J = default_jurisdictions(0.03)["BR"]
+    neg = solve_min_equity_inst(firm, J, Regime("p", [-0.1] * 4, LA0=0.0, PF0=0.0, PL0=-0.5))
+    zero = solve_min_equity_inst(firm, J, Regime("p", [-0.1] * 4, LA0=0.0, PF0=0.0, PL0=0.0))
+    assert neg.E0 >= 0.5 - 1e-6 and zero.E0 <= 1e-6
+
+
+def test_stage2_survives_presolve_failure():
+    """Regressão: com E0 fixado em ±1e-9, o presolve do HiGHS declara inviável a etapa 2 em alguns pontos reais.
+    O ponto abaixo (BR-10561, 2018-09-30, com fluxos do painel) tem de devolver CLS, sem converter a falha em zero."""
+    from xfr_engine.panel import run_panel
+    import csv
+    linha = dict(next(csv.DictReader(open("tests/ponto_presolve.csv", encoding="utf-8"))))
+    r = next(x for x in run_panel([linha], c_E=0.10) if x["config"] == "all_on")
+    assert r["status"] == "ok" and r["CLS"] is not None and r["status_custo"] == "ok"
+
+
+def _painel_mod():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("painel_etapa2", "scripts/etapa2/painel.py")
+    m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+    return m
+
+
+def test_rotulos_cvm_de_juros_e_tributos():
+    """Regressão dos rótulos livres da DFC encontrados na auditoria da Etapa 2 (falsos negativos e falsos positivos)."""
+    m = _painel_mod()
+    n = m._norm
+    for ds in ("Amortizações de juros - financiamentos", "Encargos de empréstimos e financiamentos pagos",
+               "Pagamento de encargos financeiros", "Juros pagos"):
+        assert m.e_juros_pago(n(ds), "6.03.02"), ds
+    for ds in ("Empréstimos, financiamentos e debêntures (pagamentos de principal e juros)", "Juros Provisionados e não Pagos",
+               "Juros sobre capital próprio pagos", "Juros a pagar", "Pagamento de empréstimos e juros"):
+        assert not m.e_juros_pago(n(ds), "6.03.02"), ds
+    assert not m.e_juros_pago(n("Juros pagos"), "6.01.01.05")
+    for ds, c in (("Tributos sobre o lucro", "6.01.03.06"), ("Pagato. IR e CSSL", "6.01.02.09"), ("Imposto de renda e contribuição social pagos", "6.01.02.01")):
+        assert m.e_tributo_pago(n(ds), c), ds
+    for ds, c in (("Pagamento de refinanciamento de impostos e contribuição - principal", "6.03.01"), ("Pagamento de Outros Impostos e Contribuições", "6.01.02.01"),
+                  ("Impostos pagos - PIS, COFINS e ISS", "6.01.02.01"), ("Imposto de renda e contribuição social", "6.01.01.03")):
+        assert not m.e_tributo_pago(n(ds), c), ds
+
+
+def test_escolha_de_versao_sec_corrige_so_escala_e_sinal():
+    m = _painel_mod()
+    assert m._escolhe([("2018-05", 554275000000.0), ("2019-05", 554275000.0)])[0] == 554275000.0   # erro de escala corrigido depois
+    assert m._escolhe([("2021-08", 23539000.0), ("2022-08", 23539000000.0)])[0] == 23539000.0      # certo primeiro, errado depois
+    assert m._escolhe([("2021-02", -1819.0), ("2022-02", 1819.0)])[0] == 1819.0                    # sinal corrigido
+    assert m._escolhe([("2018-05", 100.0), ("2019-05", 130.0)]) == (100.0, "2018-05")              # reapresentação comum: vale a primeira
+
+
+def test_panel_uses_dip_access_column():
+    """A coluna opcional dip_access substitui o acesso default: 0 reproduz no_dip e o default reproduz all_on."""
+    from xfr_engine.panel import run_panel
+    base = dict(firm_id="X", country="US", period_end="2024-12-31", regime="prejuizo", data_class="P", T="4", C0="0.02", L="0.02", S="0.03",
+                line_A="0.10", line_rate="0.02", q_frac="1", LA0="0", PF0="0", PL0="0.2",
+                **{f"fco_{t}": "-0.01" for t in range(1, 5)}, **{f"pi_{t}": "-0.01" for t in range(1, 5)})
+    res = {r["config"]: r for r in run_panel([base], c_E=0.10)}
+    zero = next(r for r in run_panel([dict(base, dip_access="0")], c_E=0.10) if r["config"] == "all_on")
+    assert zero["ISC"] == pytest.approx(res["no_dip"]["ISC"], abs=1e-7)
+    meio = next(r for r in run_panel([dict(base, dip_access="0.5")], c_E=0.10) if r["config"] == "all_on")
+    assert res["all_on"]["ISC"] - 1e-7 <= meio["ISC"] <= res["no_dip"]["ISC"] + 1e-7

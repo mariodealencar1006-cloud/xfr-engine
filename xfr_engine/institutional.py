@@ -264,12 +264,21 @@ def _unpack(f: Firm, L: dict, res, cost_vec=None) -> InstSolution:
     return sol
 
 
-def solve_min_equity_inst(firm: Firm, jur: Jurisdiction, reg: Regime) -> InstSolution:
+def _milp(c, cons, bounds, integ, presolve: bool = True):
+    """Resolve o MILP; se o presolve do HiGHS falhar, repete sem ele (o presolve pode declarar inviável um problema viável)."""
+    res = milp(c, constraints=cons, bounds=bounds, integrality=integ, options={"presolve": presolve})
+    if presolve and (res.status != 0 or res.x is None):
+        alt = milp(c, constraints=cons, bounds=bounds, integrality=integ, options={"presolve": False})
+        if alt.status == 0 and alt.x is not None:
+            return alt
+    return res
+
+
+def solve_min_equity_inst(firm: Firm, jur: Jurisdiction, reg: Regime, presolve: bool = True) -> InstSolution:
     """Etapa 1 com camada institucional (eq. 5 do Artigo 2): E* = min E0."""
     f, L, cons, bounds, integ, _ = _build(firm, jur, reg)
     c = np.zeros(L["n"]); c[0] = 1.0
-    res = milp(c, constraints=cons, bounds=bounds, integrality=integ)
-    return _unpack(f, L, res)
+    return _unpack(f, L, _milp(c, cons, bounds, integ, presolve))
 
 
 def cost_vector(f: Firm, L: dict, jur: Jurisdiction, c_E: float) -> np.ndarray:
@@ -296,8 +305,7 @@ def solve_min_cost_inst(firm: Firm, jur: Jurisdiction, reg: Regime, E0_fixed: fl
     c = cost_vector(f, L, jur, c_E)
     lb = bounds.lb.copy(); ub = bounds.ub.copy()
     lb[0] = E0_fixed - 1e-9; ub[0] = E0_fixed + 1e-9
-    res = milp(c, constraints=cons, bounds=Bounds(lb, ub), integrality=integ)
-    return _unpack(f, L, res, c)
+    return _unpack(f, L, _milp(c, cons, Bounds(lb, ub), integ), c)
 
 
 @dataclass
@@ -325,9 +333,15 @@ def substitution(firm: Firm, jur: Jurisdiction, reg: Regime, q: float, h_A: Sequ
     fq = _firm_with_dip(firm, j, q, h_A)
     s0 = solve_min_equity_inst(f0, j, reg)
     sq = solve_min_equity_inst(fq, j, reg)
+    if s0.ok() and sq.ok() and sq.E0 < s0.E0 - 1e-7:
+        # A retirada só encolhe o conjunto viável (o DIP repõe no máximo o retirado, a custo maior): E*(q) < E*(0)
+        # é erro numérico do presolve, não resultado do modelo.
+        s0 = solve_min_equity_inst(f0, j, reg, presolve=False)
+        sq = solve_min_equity_inst(fq, j, reg, presolve=False)
     if not (s0.ok() and sq.ok()):
+        st = "undefined/infeasible" if "infeasible" in (s0.status, sq.status) else "solver_error"
         return SubstitutionResult(jur.name, reg.name, rules, q, s0.E0, sq.E0, None, None, None, None,
-                                  "undefined/infeasible", {"base": s0.status, "shock": sq.status})
+                                  st, {"base": s0.status, "shock": sq.status})
     c0 = solve_min_cost_inst(f0, j, reg, s0.E0, c_E)
     cq = solve_min_cost_inst(fq, j, reg, sq.E0, c_E)
     isc = (sq.E0 - s0.E0) / q if q > EPS else None
@@ -335,7 +349,10 @@ def substitution(firm: Firm, jur: Jurisdiction, reg: Regime, q: float, h_A: Sequ
     detail = {"base": s0, "shock": sq, "base_cost": c0, "shock_cost": cq,
               "JCP_base": sum(s0.JCP), "JCP_shock": sum(sq.JCP),
               "TAX_base": sum(s0.TAX), "TAX_shock": sum(sq.TAX),
-              "DIP_shock": (sum(sq.D[1]) if len(sq.D) > 1 else 0.0)}
+              "DIP_shock": (sum(sq.D[1]) if len(sq.D) > 1 else 0.0),
+              "status_custo": "ok" if (c0.ok() and cq.ok()) else "erro_etapa2",
+              "JCP_custo": sum(cq.JCP) if cq.ok() else None,
+              "DIP_custo": (sum(cq.D[1]) if cq.ok() and len(cq.D) > 1 else 0.0 if cq.ok() else None)}
     return SubstitutionResult(jur.name, reg.name, rules, q, s0.E0, sq.E0, isc,
                               c0.cost if c0.ok() else None, cq.cost if cq.ok() else None, cls, "ok", detail)
 

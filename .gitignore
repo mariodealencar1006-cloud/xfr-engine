@@ -6,5 +6,6 @@ build/
 dist/
 .venv/
 .DS_Store
-data/raw/
+data/raw/*
+!data/raw/manifest.csv
 data/panel/*.csv

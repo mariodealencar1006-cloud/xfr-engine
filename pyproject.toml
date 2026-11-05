@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xfr-engine"
-version = "0.3.0"
+version = "0.4.0"
 description = "XFR-AI deterministic financial engine: cash/debt identities, minimum-equity LP, credit-to-equity substitution index (CES/ISC) and the directional shadow price of credit"
 readme = "README.md"
 license = "MIT"

@@ -23,7 +23,7 @@ test" of Section 9 of the paper (Appendix A describes the implementation).
 | Propositions 1–2, numerical verification on a grid | `metrics.estar_curve`/`proposition_checks` · `directional.estar_curve_q`/`proposition_checks_q` |
 | Section 6.9 terminality and infeasibility diagnosis (minimum relaxation) | `Firm.terminal_repay`, `solver.diagnose_infeasibility` |
 | Section 9.2 closed form `1 − charges/q` | `metrics.closed_form_isc` |
-| Tests of Section 9, Appendix A.1 and the directional form | `tests/` (26 automated cases; 36 with the institutional layer) |
+| Tests of Section 9, Appendix A.1 and the directional form | `tests/` (26 automated cases; 36 with the institutional layer; 43 with the Stage 2 panel) |
 | Explanation layer (binding constraints, blocked instruments) | `Solution.binding` |
 
 Solver: linear programming with HiGHS (`scipy.optimize.linprog`). Dependencies: `numpy`, `scipy`;
@@ -36,7 +36,7 @@ pip install -e .
 python -m xfr_engine.example_section9                 # reproduces Section 9 and the variants
 python -m xfr_engine.example_section9 --json results/section9.json
 pip install pytest                                    # only needed for the tests
-pytest -q                                             # 26 tests
+pytest -q                                             # 43 tests
 ```
 
 ```python
@@ -92,7 +92,7 @@ withdrawn) and the net cost of substitution CLS = [C*(q) − C*(0)]/q (economic 
 
 ```bash
 python -m xfr_engine.experiment_I --out results     # Tables 5–6, hypothesis checks, DIP sweep, figure
-pytest -q                                           # 36 tests
+pytest -q                                           # 43 tests
 ```
 
 Experiment I on the Article 1 synthetic example (results/experiment_I.md): with instruments held fixed, the
@@ -107,6 +107,31 @@ Deterministic, single scenario, no chance constraint (4), no non-anticipativity 
 scenarios. Planned extensions: scenarios → block LP with shared first-stage variables;
 CVaR → Rockafellar–Uryasev formulation (still an LP); chance constraint → mixed-integer version, for which
 the LP dual is no longer the shadow price (Section 6.10).
+
+## v0.4.0 — Stage 2: Experiment I on a CVM/SEC panel
+
+`scripts/etapa2/` builds the firm-quarter panel of `docs/etapa2_claude_code.md` from public data and runs Experiment I on it.
+Results are in [`results/panel/tabelas.md`](results/panel/tabelas.md), the data dictionary in `data/panel/dicionario.md`, and the
+source URLs, timestamps and md5 in `data/raw/manifest.csv`.
+
+```bash
+python scripts/etapa2/coleta.py cvm
+python scripts/etapa2/coleta.py macro
+python scripts/etapa2/coleta.py lista
+python scripts/etapa2/coleta.py sec
+python scripts/etapa2/painel.py
+python -m xfr_engine.panel data/panel/painel_BR_US.csv --out results/panel/experimento_I_painel.csv --c_E 0.10 --jobs 9
+python -m xfr_engine.panel data/panel/painel_BR_US_cf_taxa.csv --out data/panel/experimento_I_cf_taxa.csv --c_E 0.10 --jobs 9
+python -m xfr_engine.panel data/panel/painel_BR_US_troca.csv --out data/panel/experimento_I_troca.csv --c_E 0.10 --jobs 9
+python -m xfr_engine.panel data/panel/painel_BR_US_troca_taxa.csv --out data/panel/experimento_I_troca_taxa.csv --c_E 0.10 --jobs 9
+python scripts/etapa2/sens_dip.py --jobs 9
+python scripts/etapa2/agrega.py
+```
+
+Public-data track only: credit lines, covenants and renewal decisions are not observed, so these numbers measure solver sensitivity to
+parameterized scenarios and do not validate actual credit withdrawals. Changes to the engine in this version: optional `r_tjlp` and `dip_access` columns
+and `--jobs`/`--configs` in `xfr_engine.panel`; HiGHS is retried without presolve when presolve fails or returns E*(q) < E*(0), a case
+the model cannot produce; JCP and DIP in the panel output come from the cost stage. The synthetic Experiment I is unchanged.
 
 ## Citation
 
