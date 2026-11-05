@@ -137,6 +137,7 @@ the model cannot produce; JCP and DIP in the panel output come from the cost sta
 
 See `CITATION.cff`. Please cite the software release together with the manuscript:
 
+* **v0.4.0**: [10.5281/zenodo.23979495](https://doi.org/10.5281/zenodo.23979495)
 * **v0.3.0**: [10.5281/zenodo.23964137](https://doi.org/10.5281/zenodo.23964137)
 * **v0.2.0**: [10.5281/zenodo.23955232](https://doi.org/10.5281/zenodo.23955232)
 * **All versions** (resolves to the latest): [10.5281/zenodo.23955231](https://doi.org/10.5281/zenodo.23955231)
