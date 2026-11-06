@@ -164,6 +164,7 @@ the DIP sweep in the NCS, and PF0 for the U.S. points without an observed balanc
 
 See `CITATION.cff`. Please cite the software release together with the manuscript:
 
+* **v0.4.1**: [10.5281/zenodo.24013092](https://doi.org/10.5281/zenodo.24013092)
 * **v0.4.0**: [10.5281/zenodo.23979495](https://doi.org/10.5281/zenodo.23979495)
 * **v0.3.0**: [10.5281/zenodo.23964137](https://doi.org/10.5281/zenodo.23964137)
 * **v0.2.0**: [10.5281/zenodo.23955232](https://doi.org/10.5281/zenodo.23955232)
