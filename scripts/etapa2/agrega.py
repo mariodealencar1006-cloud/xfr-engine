@@ -19,7 +19,7 @@ SEMENTE = 20261104
 B = 1000
 OUT = "results/panel"
 REG = ["lucro", "equilibrio", "prejuizo"]
-COLS = ["firm_id", "country", "period_end", "regime", "config", "status", "status_custo", "q", "E_base", "E_shock", "ISC", "CLS", "DIP_shock", "JCP_shock"]
+COLS = ["firm_id", "country", "period_end", "regime", "config", "status", "status_custo", "folga_custo", "q", "E_base", "E_shock", "ISC", "CLS", "DIP_shock", "JCP_shock"]
 RODAPE_CLASSE = "Classes de dados: ver a seção de composição; `data_class` é P em todas as linhas."
 
 
@@ -206,9 +206,11 @@ def tabela_dip(R, TR) -> list:
     print("controles DIP (máx |dif|):", conf)
     L = ["| Acesso BR | Acesso EUA | Prejuízo: BR−EUA | IC 95% | Só firmas BR | Só firmas EUA | Equilíbrio | Lucro |", "|---|---|---|---|---|---|---|---|"]
     res = []
-    for a_, b_ in ((0.0, 0.0), (None, 0.0), (None, 0.1), (None, 0.2), (None, 0.3), (None, 0.5), (None, 0.75), (None, 1.0), (1.0, 1.0)):
-        M = sob("BR", a_).merge(sob("US", b_)[k + ["ISC"]], on=k, suffixes=("_br", "_us"), validate="one_to_one")
+    LC = ["", "O mesmo no CLS, em prejuízo:", "", "| Acesso BR | Acesso EUA | CLS: BR−EUA | IC 95% |", "|---|---|---|---|"]
+    for a_, b_ in ((0.0, 0.0), (0.0, 1.0), (None, 0.0), (None, 0.1), (None, 0.2), (None, 0.3), (None, 0.5), (None, 0.75), (None, 1.0), (1.0, 1.0)):
+        M = sob("BR", a_).merge(sob("US", b_)[k + ["ISC", "CLS"]], on=k, suffixes=("_br", "_us"), validate="one_to_one")
         M["g"] = M["ISC_br"] - M["ISC_us"]
+        M["gc"] = M["CLS_br"] - M["CLS_us"]
         bt = Boot(M)
         v = {}
         for r in REG:
@@ -216,8 +218,12 @@ def tabela_dip(R, TR) -> list:
             mb, mu = d[d["origem"] == "BR"], d[d["origem"] == "US"]
             v[r] = (0.5 * (mb["g"].mean() + mu["g"].mean()), 0.5 * (bt.media(mb, "g") + bt.media(mu, "g")), mb["g"].mean(), mu["g"].mean())
         c = ic(v["prejuizo"][1])
+        dp = M[M["regime"] == "prejuizo"]
+        mb, mu = dp[dp["origem"] == "BR"], dp[dp["origem"] == "US"]
+        vc = 0.5 * (bt.media(mb, "gc") + bt.media(mu, "gc")); cc = ic(vc)
         rot = lambda x, pad: f"{int(round(100 * (pad if x is None else x)))}%"
         L.append(f"| {rot(a_, 0.3)} | {rot(b_, 1.0)} | {f(v['prejuizo'][0], 4)} | [{f(c[0], 4)}; {f(c[1], 4)}] | {f(v['prejuizo'][2], 4)} | {f(v['prejuizo'][3], 4)} | {f(v['equilibrio'][0], 4)} | {f(v['lucro'][0], 4)} |")
+        LC.append(f"| {rot(a_, 0.3)} | {rot(b_, 1.0)} | {f(0.5 * (mb['gc'].mean() + mu['gc'].mean()), 4)} | [{f(cc[0], 4)}; {f(cc[1], 4)}] |")
         res.append((a_, b_, v["prejuizo"][0], c))
     fixo = [x for x in res if x[0] is None]
     pos = [x[1] for x in fixo if x[3][0] > 0]; neg = [x[1] for x in fixo if x[3][1] < 0]
@@ -225,7 +231,72 @@ def tabela_dip(R, TR) -> list:
     txt = (f"Com o Brasil fixo em 30%, a diferença em prejuízo é positiva com IC acima de zero a partir de {int(100 * min(pos))}% de acesso nos EUA" if pos else "Com o Brasil fixo em 30%, nenhum nível de acesso nos EUA leva o IC inteiro acima de zero")
     txt += (f" e negativa com IC abaixo de zero até {int(100 * max(neg))}%. " if neg else ". ")
     txt += f"Com acesso igual, a diferença é {f(igual[2], 4)} [{f(igual[3][0], 4)}; {f(igual[3][1], 4)}] a 30% e {f(cem[2], 4)} [{f(cem[3][0], 4)}; {f(cem[3][1], 4)}] a 100%."
-    return L + ["", txt]
+    return L + ["", txt] + LC
+
+
+def canais_sem_dip(M) -> list:
+    """Mesma firma, DIP desligado, onde H2 situa os canais. Tributário = no_dip − all_off, pois sem DIP as demais regras só agem pelo tributo."""
+    bm = Boot(M)
+    L = ["| Regime | Métrica | Total BR−EUA | IC 95% | Tributário | IC 95% | Juros | IC 95% | Resíduo |", "|---|---|---|---|---|---|---|---|---|"]
+    for r in REG:
+        for m in ("ISC", "CLS"):
+            tot, off, jur = gap(M, bm, "g" + m, r, "no_dip")["media"], gap(M, bm, "g" + m, r, "all_off")["media"], gap(M, bm, "r" + m, r, "no_dip")["media"]
+            tr = (tot[0] - off[0], tot[1] - off[1])
+            ct, ctr, cj = ic(tot[1]), ic(tr[1]), ic(jur[1])
+            L.append(f"| {r} | {m} | {f(tot[0], 4)} | [{f(ct[0], 4)}; {f(ct[1], 4)}] | {f(tr[0], 4)} | [{f(ctr[0], 4)}; {f(ctr[1], 4)}] | {f(jur[0], 4)} | [{f(cj[0], 4)}; {f(cj[1], 4)}] | {f(tot[0] - tr[0] - jur[0], 4)} |")
+    return L
+
+
+def escudo_h1(R, E) -> list:
+    """Amostra própria: efeito do escudo dos juros da linha (κ_I = 0 como contrafactual) e de toda a camada tributária, por regime, sem DIP."""
+    k = ["firm_id", "period_end"]
+    B_ = R[R["config"] == "no_dip"][k + ["origem", "regime", "ISC"]]
+    d = B_.merge(E[k + ["ISC"]].rename(columns={"ISC": "ISC_sem"}), on=k, validate="one_to_one").merge(
+        R[R["config"] == "all_off"][k + ["ISC"]].rename(columns={"ISC": "ISC_off"}), on=k, validate="one_to_one")
+    d["escudo"] = d["ISC"] - d["ISC_sem"]; d["camada"] = d["ISC"] - d["ISC_off"]
+    bt = Boot(d)
+    L = ["| País | Regime | Escudo dos juros da linha | IC 95% | Camada tributária inteira | IC 95% |", "|---|---|---|---|---|---|"]
+    for c in ("BR", "US"):
+        est = {}
+        for r in ("lucro", "equilibrio", "prejuizo"):
+            g = d[(d["origem"] == c) & (d["regime"] == r)]
+            est[r] = {x: (g[x].mean(), bt.media(g, x)) for x in ("escudo", "camada")}
+            a, b = ic(est[r]["escudo"][1]), ic(est[r]["camada"][1])
+            L.append(f"| {c} | {r} | {f(est[r]['escudo'][0], 4)} | [{f(a[0], 4)}; {f(a[1], 4)}] | {f(est[r]['camada'][0], 4)} | [{f(b[0], 4)}; {f(b[1], 4)}] |")
+        de, dc = [(est["prejuizo"][x][0] - est["lucro"][x][0], est["prejuizo"][x][1] - est["lucro"][x][1]) for x in ("escudo", "camada")]
+        a, b = ic(de[1]), ic(dc[1])
+        L.append(f"| {c} | prejuízo − lucro | {f(de[0], 4)} | [{f(a[0], 4)}; {f(a[1], 4)}] | {f(dc[0], 4)} | [{f(b[0], 4)}; {f(b[1], 4)}] |")
+    return L
+
+
+def jcp_por_estado(R, P) -> list:
+    """Firmas brasileiras sob regras BR: efeito do JCP no CLS por tercil e, no de prejuízo, pelo sinal da soma do EBIT futuro."""
+    k = ["firm_id", "period_end"]
+    A = R[(R["origem"] == "BR") & (R["config"] == "all_on")][k + ["origem", "regime", "CLS"]]
+    d = A.merge(R[R["config"] == "no_jcp"][k + ["CLS"]].rename(columns={"CLS": "CLS_sem"}), on=k, validate="one_to_one")
+    pf = P.assign(soma=P[["pi_1", "pi_2", "pi_3", "pi_4"]].sum(axis=1))[k + ["soma"]]
+    d = d.merge(pf, on=k, validate="one_to_one")
+    d["ef"] = d["CLS"] - d["CLS_sem"]
+    bt = Boot(d)
+    grupos = [("lucro", d["regime"] == "lucro"), ("equilibrio", d["regime"] == "equilibrio"), ("prejuizo", d["regime"] == "prejuizo"),
+              ("prejuizo, Σ EBIT futuro < 0", (d["regime"] == "prejuizo") & (d["soma"] < 0)), ("prejuizo, Σ EBIT futuro ≥ 0", (d["regime"] == "prejuizo") & (d["soma"] >= 0))]
+    base = bt.media(d[grupos[0][1]], "ef"); m0 = d.loc[grupos[0][1], "ef"].mean()
+    L = ["| Grupo | Pontos | Efeito do JCP no CLS | IC 95% | Razão ao efeito em lucro | IC 95% |", "|---|---|---|---|---|---|"]
+    for nome, mask in grupos:
+        g = d[mask & d["ef"].notna()]
+        v = bt.media(g, "ef"); a = ic(v); r_ = ic(v / base)
+        L.append(f"| {nome} | {len(g)} | {f(g['ef'].mean(), 5)} | [{f(a[0], 5)}; {f(a[1], 5)}] | {f(g['ef'].mean() / m0, 3)} | [{f(r_[0], 3)}; {f(r_[1], 3)}] |")
+    return L
+
+
+def mesma_firma_sens(Z, Zt):
+    """Mesma firma numa sensibilidade rodada sob as regras próprias (Z) e as da outra jurisdição (Zt)."""
+    k = ["firm_id", "period_end", "config"]
+    Mz = Z[k + ["origem", "regime", "ISC", "CLS"]].merge(Zt[k + ["ISC", "CLS"]].rename(columns={"ISC": "ISC_tr", "CLS": "CLS_tr"}), on=k, validate="one_to_one")
+    br = Mz["origem"] == "BR"
+    for m_ in ("ISC", "CLS"):
+        Mz["g" + m_] = np.where(br, Mz[m_] - Mz[m_ + "_tr"], Mz[m_ + "_tr"] - Mz[m_])
+    return Mz
 
 
 def janela(d, ini=None, fim=None):
@@ -296,6 +367,7 @@ def main():
     # ---------------------------------------------------------------- relatório
     b_, u_ = P[P.country == "BR"], P[P.country == "US"]
     n_ok = int((R["status"] == "ok").sum()); n_sem_cls = int(((R["status"] == "ok") & R["CLS"].isna() & (R["q"] > 1e-7)).sum()); n_q0 = int((R["q"] <= 1e-7).sum())
+    n_folga = int((R["folga_custo"] > 1e-9).sum()) if "folga_custo" in R else 0
     L = ["# Experimento I em dados reais — painel CVM/SEC (Etapa 2)", ""]
     L += [f"Gerado por `scripts/etapa2/agrega.py`. T = 4 trimestres; q_frac = 1; c_E = 0,10. E* em proporção do ativo de t; ISC e CLS por unidade de q. "
           f"IC de 95% por bootstrap em blocos de firma, estratificado pela amostra de origem, {B} reamostragens, semente {SEMENTE}.", ""]
@@ -308,7 +380,7 @@ def main():
           "- **As médias de E* são puxadas por poucas firmas muito pequenas.** Prefira as medianas.", ""]
     L += ["## Amostra", "", "| País | Firmas | Pontos de decisão | Primeiro t | Último t |", "|---|---|---|---|---|",
           f"| BR | {b_.firm_id.nunique()} | {len(b_)} | {b_.period_end.min()} | {b_.period_end.max()} |", f"| US | {u_.firm_id.nunique()} | {len(u_)} | {u_.period_end.min()} | {u_.period_end.max()} |", ""]
-    L += [f"Na comparação da mesma firma entram {M[M.config == 'all_on'].shape[0]} pontos: os demais são brasileiros de trimestres sem SOFR. Solver: {n_ok} de {len(R)} linhas com status ok; {n_sem_cls} com etapa 2 sem solução e {n_q0} com q = 0 (linha remanescente observada igual a zero) entram como indefinidas.", ""]
+    L += [f"Na comparação da mesma firma entram {M[M.config == 'all_on'].shape[0]} pontos: os demais são brasileiros de trimestres sem SOFR. Solver: {n_ok} de {len(R)} linhas com status ok, {n_folga} delas com etapa 2 fechada só com E0 até 1e-5 acima de E*; {n_sem_cls} com etapa 2 sem solução e {n_q0} com q = 0 (linha remanescente observada igual a zero) entram como indefinidas.", ""]
     L += ["Atrito (pontos brutos → painel):", ""]
     for c in ("BR", "US"):
         it = {k[3:]: v_ for k, v_ in atr.items() if k.startswith(c + "_") and isinstance(v_, int)}
@@ -345,7 +417,7 @@ def main():
     L += ["", f"**H2, leitura conjunta (mesma firma, prejuízo):** sem DIP, {f(a['media'][0], 4)} [{f(ca[0], 4)}; {f(ca[1], 4)}]; com DIP, {f(b['media'][0], 4)} [{f(cb[0], 4)}; {f(cb[1], 4)}]. "
           + ("O sinal se inverte com o DIP, como a H2 prevê, e os dois IC sustentam a inversão." if inverte else "Os dois IC, juntos, não sustentam a inversão de sinal prevista pela H2."), ""]
     L += ["### H2 — sensibilidade ao acesso a DIP (mesma firma, all_on)", "",
-          "A inversão de sinal depende de uma suposição, não de um dado observado. A tabela varia só o acesso, como o `dip_sweep` de `experiment_I.py`: Brasil fixo em 30% e EUA de 0% a 100%, mais o caso de acesso igual a 100% (Artigo 2, seção 7.3, cenário d) e o caso sem DIP. As colunas de `Prejuízo` até `Só firmas EUA` são desse regime; `Prejuízo`, `Equilíbrio` e `Lucro` são médias simples das duas amostras. " + RODAPE_CLASSE, ""]
+          "A inversão de sinal depende de uma suposição, não de um dado observado. A tabela varia só o acesso, como o `dip_sweep` de `experiment_I.py`: Brasil fixo em 30% e EUA de 0% a 100%, mais o caso de acesso igual a 100% (Artigo 2, seção 7.3, cenário d), o caso sem DIP e o caso de DIP só nos EUA, como H2 foi enunciada. As colunas de `Prejuízo` até `Só firmas EUA` são desse regime; `Prejuízo`, `Equilíbrio` e `Lucro` são médias simples das duas amostras. " + RODAPE_CLASSE, ""]
     L += tabela_dip(R, TR)
     L += [""]
     L += ["### H1 — margem extensiva e margem intensiva (no_dip)", "",
@@ -357,15 +429,27 @@ def main():
     L += ["", "### H3 — efeito do JCP no CLS por regime (firmas brasileiras, regras BR)", "", "| Regime | CLS, all_on | CLS, no_jcp | Efeito do JCP |", "|---|---|---|---|"]
     for r in REG:
         L.append(f"| {r} | {f(jc[(r, 'all_on')], 4)} | {f(jc[(r, 'no_jcp')], 4)} | {f(jc[(r, 'all_on')] - jc[(r, 'no_jcp')], 4)} |")
+    L += ["", "Na tabela seguinte, o tercil de prejuízo é separado pelo sinal da soma do EBIT dos quatro trimestres seguintes. Análise complementar, não pré-especificada.", ""] + jcp_por_estado(R, P)
+    L += ["", "### H2 — canais sem DIP (mesma firma)", "", "Tributário é a diferença entre `no_dip` e `all_off`; juros usa a taxa mediana da outra jurisdição no trimestre, como na Tabela 6A. Análise complementar, não pré-especificada.", ""] + canais_sem_dip(M)
+    if os.path.exists("data/panel/sens_escudo.csv"):
+        L += ["", "### H1 — escudo dos juros da linha e camada tributária (sem DIP)", "",
+              "O escudo é a diferença de ISC entre a configuração sem DIP e a mesma configuração sem dedução dos juros da linha (κ_I = 0), com o teto do JCP ainda sobre o lucro líquido desses juros. A camada inteira é `no_dip` − `all_off` e inclui o tributo pago, que consome caixa. Análise complementar, não pré-especificada.", ""] + escudo_h1(R, ler("data/panel/sens_escudo.csv"))
     # sensibilidades
     L += ["", "## Sensibilidades", ""]
+    if os.path.exists("data/panel/sens_juros_ded.csv"):
+        Z, Zt = ler("data/panel/sens_juros_ded.csv"), ler("data/panel/sens_juros_ded_troca.csv")
+        Mz = mesma_firma_sens(Z, Zt)
+        ip = (P["S"] - P["S_sem_juros"] > 1e-12).groupby(P["country"]).mean()
+        L += ["### Com os juros da dívida pré-existente dedutíveis", "", f"No caso-base, esses juros saem do caixa em S, mas não são deduzidos. Aqui entram na dedução, sujeitos a κ_I, pelo valor localizado (BR {100 * ip['BR']:.0f}% e EUA {100 * ip['US']:.0f}% dos pontos; nos demais, zero).", "",
+              "| Amostra | Teste | Estimativa | IC 95% | Esperado | Resultado |", "|---|---|---|---|---|---|"] + testes(Z, Mz, "Juros pré-existentes dedutíveis") + [""]
+        a_ = R[R["config"].isin(["all_on", "no_dip"])].groupby(["country", "regime", "config"])["ISC"].mean(); z = Z.groupby(["country", "regime", "config"])["ISC"].mean()
+        L += ["| País | Regime | Config. | ISC, base → sensibilidade |", "|---|---|---|---|"]
+        for k_ in a_.index:
+            L.append(f"| {k_[0]} | {k_[1]} | {k_[2]} | {f(a_[k_])} → {f(z[k_])} |")
+        L.append("")
     if os.path.exists("data/panel/sens_sem_dupla_contagem.csv"):
         Z, Zt = ler("data/panel/sens_sem_dupla_contagem.csv"), ler("data/panel/sens_sem_dupla_troca.csv")
-        k = ["firm_id", "period_end", "config"]
-        Mz = Z[k + ["origem", "regime", "ISC", "CLS"]].merge(Zt[k + ["ISC", "CLS"]].rename(columns={"ISC": "ISC_tr", "CLS": "CLS_tr"}), on=k, validate="one_to_one")
-        br = Mz["origem"] == "BR"
-        for m_ in ("ISC", "CLS"):
-            Mz["g" + m_] = np.where(br, Mz[m_] - Mz[m_ + "_tr"], Mz[m_ + "_tr"] - Mz[m_])
+        Mz = mesma_firma_sens(Z, Zt)
         L += ["### Sem dupla contagem de juros (S sem juros pagos)", "", "O FCO do roteiro já vem líquido de juros em muitas firmas, e S os soma de novo. O Artigo 1 pede para evitar essa dupla contagem; aqui ela é retirada.", "",
               "| Amostra | Teste | Estimativa | IC 95% | Esperado | Resultado |", "|---|---|---|---|---|---|"] + testes(Z, Mz, "Sem dupla contagem") + [""]
     for x in sorted(glob.glob("data/panel/sens_PF0_*.csv")):
@@ -376,6 +460,16 @@ def main():
         for k_ in z.index:
             if k_[1] in ("all_on", "no_dip"):
                 L.append(f"| {k_[0]} | {k_[1]} | {f(a_.loc[k_, 'ISC'])} → {f(z.loc[k_, 'ISC'])} | {f(a_.loc[k_, 'CLS'], 4)} → {f(z.loc[k_, 'CLS'], 4)} |")
+        L.append("")
+    for x in sorted(glob.glob("data/panel/sens_PFUS_*.csv")):
+        Z = ler(x); val = os.path.basename(x)[10:-4].replace("_", ",")
+        k = ["firm_id", "period_end", "config"]
+        J = Z.merge(R[k + ["ISC", "CLS"]], on=k, suffixes=("", "_base"), validate="one_to_one")
+        t = J.groupby(["regime", "config"])[["ISC_base", "ISC", "CLS_base", "CLS"]].mean()
+        L += [f"### Pontos americanos sem saldo observado, com PF0 = {val} do ativo (Apêndice A.2)", "", f"{len(J[J.config == 'all_on'])} pontos; médias só sobre eles.", "", "| Regime | Config. | ISC, base → sensibilidade | CLS, base → sensibilidade |", "|---|---|---|---|"]
+        for k_ in t.index:
+            if k_[1] in ("all_on", "no_dip"):
+                L.append(f"| {k_[0]} | {k_[1]} | {f(t.loc[k_, 'ISC_base'])} → {f(t.loc[k_, 'ISC'])} | {f(t.loc[k_, 'CLS_base'], 4)} → {f(t.loc[k_, 'CLS'], 4)} |")
         L.append("")
     L += ["## Escolhas onde o roteiro não decide", "", "```", atr.get("escolhas", "").strip(), "```", ""]
     open(f"{OUT}/tabelas.md", "w", encoding="utf-8").write("\n".join(L))

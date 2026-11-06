@@ -23,7 +23,8 @@ from .institutional import (RULES, Jurisdiction, Regime, default_jurisdictions, 
 RULE_LABELS = {"tax": "tributo (τ, θ)", "jcp": "JCP", "loss_cap": "trava de prejuízos (κ_P)",
                "interest_cap": "limite à dedução de juros (κ_I)", "rate": "processo de juros (canal de juros)",
                "dip": "financiamento DIP"}
-CHANNELS = {"tributário": ["tax", "jcp", "loss_cap", "interest_cap"], "juros": ["rate"], "instrumento": ["dip"]}
+# desligar o tributo também zera o JCP e torna κ_P e κ_I inócuos: estes são componentes de by_rule, não parcelas do canal
+CHANNELS = {"tributário": ["tax"], "juros": ["rate"], "instrumento": ["dip"]}
 
 
 def article1_firm():
@@ -69,7 +70,7 @@ def run(c_E: float = 0.15) -> Dict[str, object]:
                         for r in RULES}
             per_channel = {ch: sum(per_rule[r] for r in rs if per_rule[r] is not None) for ch, rs in CHANNELS.items()}
             d[metric] = {"total_BR_minus_US": total, "by_rule": per_rule, "by_channel": per_channel,
-                         "interaction_residual": None if total is None else total - sum(v for v in per_rule.values() if v is not None)}
+                         "interaction_residual": None if total is None else total - sum(per_channel.values())}
         decomposition[rn] = d
 
     # H1: ISC(prejuízo) ≤ ISC(lucro) em cada jurisdição — teste primário com o conjunto de instrumentos fixo

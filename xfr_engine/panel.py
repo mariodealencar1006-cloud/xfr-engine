@@ -14,6 +14,7 @@ e de lucro tributável):
     S, L     : serviço da dívida pré-existente e reserva mínima por período (escalares).
     r_tjlp   : opcional; TJLP por período. Sem a coluna, vale o default mensal de default_jurisdictions.
     dip_access : opcional; fração da capacidade retirada que o DIP repõe. Sem a coluna, vale o default da jurisdição.
+    I0 : opcional; juros da dívida pré-existente por período, dedutíveis. Sem a coluna, não há dedução desses juros.
 
 Saída: CSV com, por linha e por configuração de regras, E*(0), E*(q), ISC, C*(0), C*(q), CLS, JCP, DIP, status.
 
@@ -45,7 +46,8 @@ def row_to_problem(row: Dict[str, str]):
     firm = Firm(T=T, C0=float(row["C0"]), FCO=fco, S=float(row.get("S", 0) or 0), L=float(row.get("L", 0) or 0),
                 instruments=[line])
     reg = Regime(row.get("regime", "na"), pi, LA0=float(row.get("LA0", 0) or 0), PF0=float(row.get("PF0", 0) or 0),
-                 PL0=float(row.get("PL0", 0) or 0))
+                 PL0=float(row.get("PL0", 0) or 0),
+                 interest0=[float(row["I0"])] * T if row.get("I0") not in (None, "") else None)
     q = float(row.get("q_frac", 1.0) or 1.0) * max(A)
     h = [1.0 if a == max(A) and a > 0 else 0.0 for a in A]
     return firm, reg, q, h, rate
@@ -59,11 +61,16 @@ def configs() -> Dict[str, Dict[str, bool]]:
     return c
 
 
+def configs_extras() -> Dict[str, Dict[str, bool]]:
+    """Só rodam quando pedidas: sem DIP e sem o escudo fiscal dos juros, para isolar esse escudo (H1)."""
+    return {"no_dip_no_shield": dict(rules_all_on(), dip=False, shield=False)}
+
+
 def run_panel(rows: List[Dict[str, str]], c_E: float = 0.15, jurisdictions: Dict[str, Jurisdiction] | None = None,
               only: List[str] | None = None) -> List[dict]:
     out = []
-    todas = configs()
-    escolhidas = {k: todas[k] for k in only} if only else todas
+    todas = dict(configs(), **configs_extras())
+    escolhidas = {k: todas[k] for k in only} if only else configs()
     for row in rows:
         firm, reg, q, h, rate = row_to_problem(row)
         J = jurisdictions or default_jurisdictions(rate)
@@ -81,6 +88,7 @@ def run_panel(rows: List[Dict[str, str]], c_E: float = 0.15, jurisdictions: Dict
                         "q": q, "status": r.status, "E_base": r.E_base, "E_shock": r.E_shock, "ISC": r.ISC,
                         "C_base": r.C_base, "C_shock": r.C_shock, "CLS": r.CLS,
                         "status_custo": r.detail.get("status_custo"),
+                        "folga_custo": r.detail.get("folga_custo"),
                         "JCP_shock": r.detail.get("JCP_custo"), "DIP_shock": r.detail.get("DIP_custo")})
     return out
 

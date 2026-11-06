@@ -18,7 +18,7 @@ Gerado por `scripts/etapa2/agrega.py`. T = 4 trimestres; q_frac = 1; c_E = 0,10.
 | BR | 746 | 16899 | 2016-06-30 | 2024-12-31 |
 | US | 953 | 23817 | 2017-12-31 | 2024-12-31 |
 
-Na comparação da mesma firma entram 38902 pontos: os demais são brasileiros de trimestres sem SOFR. Solver: 325728 de 325728 linhas com status ok; 1 com etapa 2 sem solução e 360 com q = 0 (linha remanescente observada igual a zero) entram como indefinidas.
+Na comparação da mesma firma entram 38902 pontos: os demais são brasileiros de trimestres sem SOFR. Solver: 325728 de 325728 linhas com status ok, 0 delas com etapa 2 fechada só com E0 até 1e-5 acima de E*; 0 com etapa 2 sem solução e 360 com q = 0 (linha remanescente observada igual a zero) entram como indefinidas.
 
 Atrito (pontos brutos → painel):
 
@@ -44,28 +44,28 @@ Atrito (pontos brutos → painel):
 
 | País | Regime | Config. | N | Firmas | ISC mediana | ISC média | ISC>0 | CLS mediana | CLS média | E*(0) mediana | E*(q) mediana | E*(0) média | E*(q) média | Indefinido |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| BR | equilibrio | all_off | 5635 | 614 | 0.000 | 0.207 | 37.6% | 0.0000 | -0.0008 | 0.000 | 0.000 | 0.038 | 0.059 | 0.0% |
-| BR | equilibrio | all_on | 5635 | 614 | 0.000 | 0.153 | 33.3% | 0.0000 | 0.0072 | 0.000 | 0.000 | 0.043 | 0.058 | 0.0% |
-| BR | equilibrio | no_dip | 5635 | 614 | 0.000 | 0.259 | 45.5% | 0.0000 | 0.0049 | 0.000 | 0.000 | 0.043 | 0.069 | 0.0% |
-| BR | equilibrio | no_interest_cap | 5635 | 614 | 0.000 | 0.153 | 33.3% | 0.0000 | 0.0072 | 0.000 | 0.000 | 0.043 | 0.058 | 0.0% |
+| BR | equilibrio | all_off | 5635 | 614 | 0.000 | 0.207 | 37.5% | 0.0000 | -0.0008 | 0.000 | 0.000 | 0.038 | 0.059 | 0.0% |
+| BR | equilibrio | all_on | 5635 | 614 | 0.000 | 0.153 | 33.2% | 0.0000 | 0.0072 | 0.000 | 0.000 | 0.043 | 0.058 | 0.0% |
+| BR | equilibrio | no_dip | 5635 | 614 | 0.000 | 0.259 | 45.4% | 0.0000 | 0.0049 | 0.000 | 0.000 | 0.043 | 0.069 | 0.0% |
+| BR | equilibrio | no_interest_cap | 5635 | 614 | 0.000 | 0.153 | 33.2% | 0.0000 | 0.0072 | 0.000 | 0.000 | 0.043 | 0.058 | 0.0% |
 | BR | equilibrio | no_jcp | 5635 | 614 | 0.000 | 0.159 | 34.4% | 0.0000 | 0.0089 | 0.000 | 0.000 | 0.043 | 0.059 | 0.0% |
-| BR | equilibrio | no_loss_cap | 5635 | 614 | 0.000 | 0.153 | 33.2% | 0.0000 | 0.0072 | 0.000 | 0.000 | 0.043 | 0.058 | 0.0% |
-| BR | equilibrio | no_rate | 5635 | 614 | 0.000 | 0.153 | 33.3% | 0.0000 | 0.0072 | 0.000 | 0.000 | 0.043 | 0.058 | 0.0% |
+| BR | equilibrio | no_loss_cap | 5635 | 614 | 0.000 | 0.153 | 33.1% | 0.0000 | 0.0071 | 0.000 | 0.000 | 0.043 | 0.058 | 0.0% |
+| BR | equilibrio | no_rate | 5635 | 614 | 0.000 | 0.153 | 33.2% | 0.0000 | 0.0072 | 0.000 | 0.000 | 0.043 | 0.058 | 0.0% |
 | BR | equilibrio | no_tax | 5635 | 614 | 0.000 | 0.124 | 26.9% | 0.0000 | 0.0045 | 0.000 | 0.000 | 0.038 | 0.050 | 0.0% |
 | BR | lucro | all_off | 5646 | 592 | 0.000 | 0.151 | 26.4% | 0.0000 | -0.0006 | 0.000 | 0.000 | 0.054 | 0.069 | 0.0% |
-| BR | lucro | all_on | 5646 | 592 | 0.000 | 0.134 | 27.8% | 0.0000 | 0.0059 | 0.000 | 0.000 | 0.063 | 0.077 | 0.0% |
+| BR | lucro | all_on | 5646 | 592 | 0.000 | 0.134 | 27.7% | 0.0000 | 0.0059 | 0.000 | 0.000 | 0.063 | 0.077 | 0.0% |
 | BR | lucro | no_dip | 5646 | 592 | 0.000 | 0.221 | 37.9% | 0.0000 | 0.0043 | 0.000 | 0.000 | 0.063 | 0.085 | 0.0% |
-| BR | lucro | no_interest_cap | 5646 | 592 | 0.000 | 0.134 | 27.8% | 0.0000 | 0.0059 | 0.000 | 0.000 | 0.063 | 0.077 | 0.0% |
+| BR | lucro | no_interest_cap | 5646 | 592 | 0.000 | 0.134 | 27.7% | 0.0000 | 0.0059 | 0.000 | 0.000 | 0.063 | 0.077 | 0.0% |
 | BR | lucro | no_jcp | 5646 | 592 | 0.000 | 0.138 | 28.4% | 0.0000 | 0.0074 | 0.000 | 0.000 | 0.064 | 0.078 | 0.0% |
 | BR | lucro | no_loss_cap | 5646 | 592 | 0.000 | 0.133 | 27.6% | 0.0000 | 0.0060 | 0.000 | 0.000 | 0.063 | 0.076 | 0.0% |
-| BR | lucro | no_rate | 5646 | 592 | 0.000 | 0.134 | 27.8% | 0.0000 | 0.0059 | 0.000 | 0.000 | 0.063 | 0.077 | 0.0% |
+| BR | lucro | no_rate | 5646 | 592 | 0.000 | 0.134 | 27.7% | 0.0000 | 0.0059 | 0.000 | 0.000 | 0.063 | 0.077 | 0.0% |
 | BR | lucro | no_tax | 5646 | 592 | 0.000 | 0.093 | 18.8% | 0.0000 | 0.0030 | 0.000 | 0.000 | 0.054 | 0.064 | 0.0% |
 | BR | prejuizo | all_off | 5618 | 582 | 0.057 | 0.357 | 54.3% | 0.0000 | -0.0014 | 0.000 | 0.013 | 0.255 | 0.290 | 0.0% |
 | BR | prejuizo | all_on | 5618 | 582 | 0.000 | 0.248 | 45.7% | 0.0003 | 0.0081 | 0.000 | 0.006 | 0.263 | 0.288 | 0.0% |
 | BR | prejuizo | no_dip | 5618 | 582 | 0.141 | 0.382 | 58.5% | 0.0000 | 0.0021 | 0.000 | 0.022 | 0.263 | 0.301 | 0.0% |
 | BR | prejuizo | no_interest_cap | 5618 | 582 | 0.000 | 0.248 | 45.7% | 0.0003 | 0.0081 | 0.000 | 0.006 | 0.263 | 0.288 | 0.0% |
 | BR | prejuizo | no_jcp | 5618 | 582 | 0.000 | 0.250 | 46.0% | 0.0008 | 0.0090 | 0.000 | 0.006 | 0.264 | 0.289 | 0.0% |
-| BR | prejuizo | no_loss_cap | 5618 | 582 | 0.000 | 0.247 | 45.6% | 0.0001 | 0.0080 | 0.000 | 0.005 | 0.263 | 0.287 | 0.0% |
+| BR | prejuizo | no_loss_cap | 5618 | 582 | 0.000 | 0.247 | 45.5% | 0.0001 | 0.0080 | 0.000 | 0.005 | 0.263 | 0.287 | 0.0% |
 | BR | prejuizo | no_rate | 5618 | 582 | 0.000 | 0.248 | 45.7% | 0.0003 | 0.0081 | 0.000 | 0.006 | 0.263 | 0.288 | 0.0% |
 | BR | prejuizo | no_tax | 5618 | 582 | 0.000 | 0.234 | 43.1% | 0.0000 | 0.0064 | 0.000 | 0.001 | 0.255 | 0.278 | 0.0% |
 | US | equilibrio | all_off | 7941 | 830 | 0.000 | 0.010 | 3.7% | 0.0000 | 0.0006 | 0.000 | 0.000 | 0.001 | 0.002 | 0.2% |
@@ -102,7 +102,7 @@ Atrito (pontos brutos → painel):
 | Média | lucro | ISC | 0.0642 | 0.0204 | -0.0021 | 0.0003 | -0.0000 | 0.0005 | 0.0577 | -0.0143 |
 | Média | lucro | CLS | 0.0012 | 0.0014 | -0.0007 | 0.0000 | -0.0000 | 0.0004 | 0.0057 | -0.0063 |
 | Média | equilibrio | ISC | 0.0750 | 0.0152 | -0.0030 | 0.0004 | -0.0000 | 0.0009 | 0.0722 | -0.0133 |
-| Média | equilibrio | CLS | 0.0014 | 0.0015 | -0.0009 | 0.0000 | -0.0000 | 0.0008 | 0.0074 | -0.0083 |
+| Média | equilibrio | CLS | 0.0014 | 0.0015 | -0.0009 | 0.0000 | -0.0001 | 0.0008 | 0.0074 | -0.0083 |
 | Média | prejuizo | ISC | 0.1282 | 0.0085 | -0.0012 | 0.0009 | -0.0001 | 0.0008 | 0.1321 | -0.0132 |
 | Média | prejuizo | CLS | 0.0001 | 0.0010 | -0.0005 | 0.0001 | -0.0001 | 0.0007 | 0.0112 | -0.0128 |
 | Firmas BR | lucro | ISC | 0.1249 | 0.0393 | -0.0040 | 0.0004 | -0.0000 | 0.0009 | 0.1128 | -0.0281 |
@@ -137,7 +137,7 @@ H1 usa a amostra própria. H2 e H3 usam a mesma firma sob as duas jurisdições.
 
 | Amostra | Teste | Estimativa | IC 95% | Esperado | Resultado |
 |---|---|---|---|---|---|
-| Completa | H1 BR: ISC(prejuízo) − ISC(lucro), no_dip, média | 0.1606 | [0.1213; 0.1965] | < 0 | contraria |
+| Completa | H1 BR: ISC(prejuízo) − ISC(lucro), no_dip, média | 0.1606 | [0.1213; 0.1966] | < 0 | contraria |
 | Completa | H1 BR: idem, mediana | 0.1408 | [0.0483; 0.2640] | < 0 | contraria |
 | Completa | H1 US: ISC(prejuízo) − ISC(lucro), no_dip, média | 0.0316 | [0.0225; 0.0424] | < 0 | contraria |
 | Completa | H1 US: idem, mediana | 0.0000 | [0.0000; 0.0000] | < 0 | sem variação: estatística igual a 0 |
@@ -153,7 +153,7 @@ H1 usa a amostra própria. H2 e H3 usam a mesma firma sob as duas jurisdições.
 | Janela comum (t ≥ 2018-06) | H2 mesma firma: ISC_BR − ISC_US, prejuízo, no_dip | -0.0039 | [-0.0051; -0.0025] | ≤ 0 | confirma |
 | Janela comum (t ≥ 2018-06) | H2 mesma firma: ISC_BR − ISC_US, prejuízo, all_on | 0.1270 | [0.1139; 0.1396] | > 0 | confirma |
 | Janela comum (t ≥ 2018-06) | H3 mesma firma: contribuição do JCP à DiD do CLS (all_on − no_jcp) | 0.0002 | [0.0001; 0.0003] | > 0 | confirma |
-| Horizonte cruza 2020 (estresse) | H1 BR: ISC(prejuízo) − ISC(lucro), no_dip, média | 0.1783 | [0.1212; 0.2344] | < 0 | contraria |
+| Horizonte cruza 2020 (estresse) | H1 BR: ISC(prejuízo) − ISC(lucro), no_dip, média | 0.1783 | [0.1212; 0.2345] | < 0 | contraria |
 | Horizonte cruza 2020 (estresse) | H1 US: ISC(prejuízo) − ISC(lucro), no_dip, média | 0.0422 | [0.0280; 0.0554] | < 0 | contraria |
 | Horizonte cruza 2020 (estresse) | H2 mesma firma: ISC_BR − ISC_US, prejuízo, no_dip | -0.0003 | [-0.0017; 0.0014] | ≤ 0 | inconclusivo (IC inclui 0) |
 | Horizonte cruza 2020 (estresse) | H2 mesma firma: ISC_BR − ISC_US, prejuízo, all_on | 0.1395 | [0.1210; 0.1571] | > 0 | confirma |
@@ -168,11 +168,12 @@ H1 usa a amostra própria. H2 e H3 usam a mesma firma sob as duas jurisdições.
 
 ### H2 — sensibilidade ao acesso a DIP (mesma firma, all_on)
 
-A inversão de sinal depende de uma suposição, não de um dado observado. A tabela varia só o acesso, como o `dip_sweep` de `experiment_I.py`: Brasil fixo em 30% e EUA de 0% a 100%, mais o caso de acesso igual a 100% (Artigo 2, seção 7.3, cenário d) e o caso sem DIP. As colunas de `Prejuízo` até `Só firmas EUA` são desse regime; `Prejuízo`, `Equilíbrio` e `Lucro` são médias simples das duas amostras. Classes de dados: ver a seção de composição; `data_class` é P em todas as linhas.
+A inversão de sinal depende de uma suposição, não de um dado observado. A tabela varia só o acesso, como o `dip_sweep` de `experiment_I.py`: Brasil fixo em 30% e EUA de 0% a 100%, mais o caso de acesso igual a 100% (Artigo 2, seção 7.3, cenário d), o caso sem DIP e o caso de DIP só nos EUA, como H2 foi enunciada. As colunas de `Prejuízo` até `Só firmas EUA` são desse regime; `Prejuízo`, `Equilíbrio` e `Lucro` são médias simples das duas amostras. Classes de dados: ver a seção de composição; `data_class` é P em todas as linhas.
 
 | Acesso BR | Acesso EUA | Prejuízo: BR−EUA | IC 95% | Só firmas BR | Só firmas EUA | Equilíbrio | Lucro |
 |---|---|---|---|---|---|---|---|
 | 0% | 0% | -0.0039 | [-0.0052; -0.0025] | -0.0085 | 0.0007 | 0.0028 | 0.0066 |
+| 0% | 100% | 0.2028 | [0.1843; 0.2204] | 0.3666 | 0.0390 | 0.1312 | 0.1086 |
 | 30% | 0% | -0.0784 | [-0.0847; -0.0718] | -0.1395 | -0.0174 | -0.0535 | -0.0378 |
 | 30% | 10% | -0.0497 | [-0.0542; -0.0451] | -0.0896 | -0.0098 | -0.0321 | -0.0218 |
 | 30% | 20% | -0.0240 | [-0.0266; -0.0212] | -0.0439 | -0.0040 | -0.0132 | -0.0077 |
@@ -183,6 +184,21 @@ A inversão de sinal depende de uma suposição, não de um dado observado. A ta
 | 100% | 100% | 0.0039 | [0.0034; 0.0044] | 0.0072 | 0.0006 | 0.0014 | 0.0013 |
 
 Com o Brasil fixo em 30%, a diferença em prejuízo é positiva com IC acima de zero a partir de 50% de acesso nos EUA e negativa com IC abaixo de zero até 20%. Com acesso igual, a diferença é -0.0003 [-0.0012; 0.0006] a 30% e 0.0039 [0.0034; 0.0044] a 100%.
+
+O mesmo no CLS, em prejuízo:
+
+| Acesso BR | Acesso EUA | CLS: BR−EUA | IC 95% |
+|---|---|---|---|
+| 0% | 0% | -0.0111 | [-0.0122; -0.0099] |
+| 0% | 100% | -0.0029 | [-0.0036; -0.0023] |
+| 30% | 0% | -0.0081 | [-0.0089; -0.0072] |
+| 30% | 10% | -0.0069 | [-0.0076; -0.0061] |
+| 30% | 20% | -0.0058 | [-0.0065; -0.0051] |
+| 30% | 30% | -0.0049 | [-0.0055; -0.0042] |
+| 30% | 50% | -0.0032 | [-0.0037; -0.0027] |
+| 30% | 75% | -0.0014 | [-0.0018; -0.0010] |
+| 30% | 100% | 0.0001 | [-0.0002; 0.0005] |
+| 100% | 100% | 0.0058 | [0.0052; 0.0064] |
 
 ### H1 — margem extensiva e margem intensiva (no_dip)
 
@@ -201,7 +217,72 @@ Comparar regimes muda também FCO, caixa e S, não só o tratamento tributário:
 | equilibrio | 0.0072 | 0.0089 | -0.0017 |
 | prejuizo | 0.0081 | 0.0090 | -0.0009 |
 
+Na tabela seguinte, o tercil de prejuízo é separado pelo sinal da soma do EBIT dos quatro trimestres seguintes. Análise complementar, não pré-especificada.
+
+| Grupo | Pontos | Efeito do JCP no CLS | IC 95% | Razão ao efeito em lucro | IC 95% |
+|---|---|---|---|---|---|
+| lucro | 5646 | -0.00146 | [-0.00164; -0.00128] | 1.000 | [1.000; 1.000] |
+| equilibrio | 5635 | -0.00170 | [-0.00191; -0.00150] | 1.164 | [1.022; 1.322] |
+| prejuizo | 5618 | -0.00087 | [-0.00100; -0.00076] | 0.598 | [0.504; 0.706] |
+| prejuizo, Σ EBIT futuro < 0 | 3025 | -0.00016 | [-0.00020; -0.00013] | 0.109 | [0.085; 0.138] |
+| prejuizo, Σ EBIT futuro ≥ 0 | 2593 | -0.00171 | [-0.00192; -0.00150] | 1.169 | [1.002; 1.356] |
+
+### H2 — canais sem DIP (mesma firma)
+
+Tributário é a diferença entre `no_dip` e `all_off`; juros usa a taxa mediana da outra jurisdição no trimestre, como na Tabela 6A. Análise complementar, não pré-especificada.
+
+| Regime | Métrica | Total BR−EUA | IC 95% | Tributário | IC 95% | Juros | IC 95% | Resíduo |
+|---|---|---|---|---|---|---|---|---|
+| lucro | ISC | 0.0066 | [0.0052; 0.0080] | 0.0090 | [0.0078; 0.0104] | -0.0025 | [-0.0030; -0.0021] | 0.0001 |
+| lucro | CLS | -0.0045 | [-0.0052; -0.0040] | -0.0001 | [-0.0003; 0.0001] | -0.0047 | [-0.0053; -0.0041] | 0.0002 |
+| equilibrio | ISC | 0.0028 | [0.0019; 0.0036] | 0.0059 | [0.0053; 0.0066] | -0.0028 | [-0.0033; -0.0023] | -0.0003 |
+| equilibrio | CLS | -0.0060 | [-0.0067; -0.0053] | 0.0004 | [0.0002; 0.0006] | -0.0060 | [-0.0066; -0.0053] | -0.0004 |
+| prejuizo | ISC | -0.0039 | [-0.0052; -0.0025] | 0.0037 | [0.0031; 0.0044] | -0.0075 | [-0.0085; -0.0064] | -0.0001 |
+| prejuizo | CLS | -0.0111 | [-0.0122; -0.0099] | 0.0005 | [0.0004; 0.0007] | -0.0113 | [-0.0125; -0.0101] | -0.0003 |
+
+### H1 — escudo dos juros da linha e camada tributária (sem DIP)
+
+O escudo é a diferença de ISC entre a configuração sem DIP e a mesma configuração sem dedução dos juros da linha (κ_I = 0), com o teto do JCP ainda sobre o lucro líquido desses juros. A camada inteira é `no_dip` − `all_off` e inclui o tributo pago, que consome caixa. Análise complementar, não pré-especificada.
+
+| País | Regime | Escudo dos juros da linha | IC 95% | Camada tributária inteira | IC 95% |
+|---|---|---|---|---|---|
+| BR | lucro | 0.0038 | [0.0032; 0.0044] | 0.0704 | [0.0612; 0.0796] |
+| BR | equilibrio | 0.0040 | [0.0033; 0.0047] | 0.0528 | [0.0481; 0.0583] |
+| BR | prejuizo | 0.0029 | [0.0025; 0.0033] | 0.0251 | [0.0214; 0.0294] |
+| BR | prejuízo − lucro | -0.0009 | [-0.0016; -0.0002] | -0.0453 | [-0.0545; -0.0363] |
+| US | lucro | 0.0000 | [0.0000; 0.0000] | 0.0023 | [0.0015; 0.0032] |
+| US | equilibrio | 0.0000 | [0.0000; 0.0000] | 0.0040 | [0.0031; 0.0050] |
+| US | prejuizo | 0.0000 | [0.0000; 0.0000] | 0.0033 | [0.0024; 0.0043] |
+| US | prejuízo − lucro | 0.0000 | [0.0000; 0.0000] | 0.0009 | [-0.0002; 0.0022] |
+
 ## Sensibilidades
+
+### Com os juros da dívida pré-existente dedutíveis
+
+No caso-base, esses juros saem do caixa em S, mas não são deduzidos. Aqui entram na dedução, sujeitos a κ_I, pelo valor localizado (BR 68% e EUA 82% dos pontos; nos demais, zero).
+
+| Amostra | Teste | Estimativa | IC 95% | Esperado | Resultado |
+|---|---|---|---|---|---|
+| Juros pré-existentes dedutíveis | H1 BR: ISC(prejuízo) − ISC(lucro), no_dip, média | 0.1688 | [0.1287; 0.2057] | < 0 | contraria |
+| Juros pré-existentes dedutíveis | H1 US: ISC(prejuízo) − ISC(lucro), no_dip, média | 0.0311 | [0.0220; 0.0418] | < 0 | contraria |
+| Juros pré-existentes dedutíveis | H2 mesma firma: ISC_BR − ISC_US, prejuízo, no_dip | -0.0057 | [-0.0069; -0.0043] | ≤ 0 | confirma |
+| Juros pré-existentes dedutíveis | H2 mesma firma: ISC_BR − ISC_US, prejuízo, all_on | 0.1262 | [0.1131; 0.1391] | > 0 | confirma |
+| Juros pré-existentes dedutíveis | H3 mesma firma: contribuição do JCP à DiD do CLS (all_on − no_jcp) | 0.0003 | [0.0002; 0.0004] | > 0 | confirma |
+
+| País | Regime | Config. | ISC, base → sensibilidade |
+|---|---|---|---|
+| BR | equilibrio | all_on | 0.153 → 0.144 |
+| BR | equilibrio | no_dip | 0.259 → 0.244 |
+| BR | lucro | all_on | 0.134 → 0.126 |
+| BR | lucro | no_dip | 0.221 → 0.208 |
+| BR | prejuizo | all_on | 0.248 → 0.245 |
+| BR | prejuizo | no_dip | 0.382 → 0.377 |
+| US | equilibrio | all_on | 0.000 → 0.000 |
+| US | equilibrio | no_dip | 0.014 → 0.013 |
+| US | lucro | all_on | 0.000 → 0.000 |
+| US | lucro | no_dip | 0.007 → 0.007 |
+| US | prejuizo | all_on | 0.000 → 0.000 |
+| US | prejuizo | no_dip | 0.039 → 0.038 |
 
 ### Sem dupla contagem de juros (S sem juros pagos)
 
@@ -236,6 +317,32 @@ O FCO do roteiro já vem líquido de juros em muitas firmas, e S os soma de novo
 | lucro | no_dip | 0.221 → 0.201 | 0.0043 → 0.0032 |
 | prejuizo | all_on | 0.248 → 0.246 | 0.0081 → 0.0079 |
 | prejuizo | no_dip | 0.382 → 0.377 | 0.0021 → 0.0016 |
+
+### Pontos americanos sem saldo observado, com PF0 = 0,05 do ativo (Apêndice A.2)
+
+9685 pontos; médias só sobre eles.
+
+| Regime | Config. | ISC, base → sensibilidade | CLS, base → sensibilidade |
+|---|---|---|---|
+| equilibrio | all_on | 0.000 → 0.000 | 0.0003 → 0.0002 |
+| equilibrio | no_dip | 0.016 → 0.012 | 0.0011 → 0.0008 |
+| lucro | all_on | 0.000 → 0.000 | 0.0001 → 0.0001 |
+| lucro | no_dip | 0.010 → 0.008 | 0.0007 → 0.0006 |
+| prejuizo | all_on | 0.000 → 0.000 | 0.0009 → 0.0009 |
+| prejuizo | no_dip | 0.048 → 0.044 | 0.0031 → 0.0027 |
+
+### Pontos americanos sem saldo observado, com PF0 = 0,10 do ativo (Apêndice A.2)
+
+9685 pontos; médias só sobre eles.
+
+| Regime | Config. | ISC, base → sensibilidade | CLS, base → sensibilidade |
+|---|---|---|---|
+| equilibrio | all_on | 0.000 → 0.000 | 0.0003 → 0.0003 |
+| equilibrio | no_dip | 0.016 → 0.012 | 0.0011 → 0.0007 |
+| lucro | all_on | 0.000 → 0.000 | 0.0001 → 0.0001 |
+| lucro | no_dip | 0.010 → 0.008 | 0.0007 → 0.0005 |
+| prejuizo | all_on | 0.000 → 0.000 | 0.0009 → 0.0009 |
+| prejuizo | no_dip | 0.048 → 0.043 | 0.0031 → 0.0026 |
 
 ## Escolhas onde o roteiro não decide
 

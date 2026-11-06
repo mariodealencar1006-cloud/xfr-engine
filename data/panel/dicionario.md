@@ -43,6 +43,10 @@ Classes do Apêndice A do Artigo 2: O observado, D derivado, P parametrizado, E 
 - `fco` e `pi` futuros são realizados, não previsões: o painel não usa IA nem previsão (Experimento I, estática comparativa).
 - O FCO de muitas firmas já está líquido de juros pagos e S soma esses juros: é a regra do roteiro; `S_sem_juros` mede o efeito.
 
+## Coluna opcional nas sensibilidades
+
+- `I0`: juros da dívida pré-existente por trimestre, `S − S_sem_juros`, dedutíveis. Só em `scripts/etapa2/sens_extra.py`; o caso-base não a usa. Classe D, ou zero quando os juros não foram localizados.
+
 ## Painéis derivados
 
 - `painel_BR_US_cf_taxa.csv`: regras da própria jurisdição, `line_rate` = taxa mediana da outra jurisdição no mesmo `tri` (canal de juros do roteiro).

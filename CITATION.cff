@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it together with the manuscript."
 title: "xfr-engine: deterministic financial engine for the shadow price of credit"
-version: 0.4.0
-date-released: 2026-11-05
+version: 0.4.1
+date-released: 2026-11-06
 doi: 10.5281/zenodo.23955231
 identifiers:
   - type: doi

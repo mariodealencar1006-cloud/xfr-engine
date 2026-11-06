@@ -11,11 +11,13 @@ Layout do vetor de decisão x (T períodos, J instrumentos):
 """
 from __future__ import annotations
 
+import itertools
+import warnings
 from dataclasses import dataclass, field, replace
 from typing import Dict, List, Optional, Sequence
 
 import numpy as np
-from scipy.optimize import milp, LinearConstraint, Bounds
+from scipy.optimize import milp, LinearConstraint, Bounds, OptimizeResult
 
 from .model import Firm, Instrument
 
@@ -37,6 +39,7 @@ class Jurisdiction:
     line_rate: Optional[float] = None  # taxa da linha por período (canal de juros); None = taxa do instrumento
     dip_access: float = 0.0          # fração da capacidade retirada que o DIP repõe no estado de recuperação
     dip_rate_mult: float = 1.5       # custo do DIP em múltiplos da taxa da linha
+    no_shield: bool = False          # juros da linha não reduzem o tributo; só com kappa_I = 0 (regra "shield")
 
 
 @dataclass
@@ -47,6 +50,7 @@ class Regime:
     LA0: float                       # lucros acumulados e reservas de lucros do exercício anterior encerrado
     PF0: float                       # saldo inicial de prejuízos fiscais compensáveis
     PL0: float                       # patrimônio líquido ajustado (base do JCP) antes do aporte
+    interest0: Optional[Sequence[float]] = None  # juros da dívida pré-existente por período, dedutíveis; o caixa já os paga em S
 
 
 RULES = ("tax", "jcp", "loss_cap", "interest_cap", "rate", "dip")
@@ -67,6 +71,8 @@ def apply_rules(jur: Jurisdiction, rules: Dict[str, bool]) -> Jurisdiction:
         j = replace(j, kappa_P=1.0)               # compensação integral
     if not rules.get("interest_cap", True):
         j = replace(j, kappa_I=None)
+    if not rules.get("shield", True):
+        j = replace(j, kappa_I=0.0, no_shield=True)   # sem escudo fiscal dos juros; não pertence a RULES
     if not rules.get("rate", True):
         j = replace(j, line_rate=None)            # taxa comum do instrumento
     if not rules.get("dip", True):
@@ -91,6 +97,8 @@ class InstSolution:
     TAX: List[float] = field(default_factory=list)
     cost: Optional[float] = None       # custo econômico (etapa 2) quando aplicável
     instruments: List[str] = field(default_factory=list)
+    x: Optional[np.ndarray] = None     # vetor completo da solução, na ordem de _build
+    folga: float = 0.0                 # etapa 2: folga de E0 acima de E* que foi preciso aceitar para fechar
 
     def ok(self) -> bool:
         return self.status == "optimal"
@@ -140,6 +148,25 @@ def _build(firm: Firm, jur: Jurisdiction, reg: Regime):
 
     pi = list(reg.pi)
     assert len(pi) == T, "Regime.pi deve ter comprimento T"
+    for k in range(T):
+        # Cotas das quantidades que entram nas linhas big-M: se alguma chega a BIG, o solver cortaria lucro, prejuízo
+        # ou JCP sem aviso e ainda diria "optimal".
+        juros = 0.0 if reg.interest0 is None else float(reg.interest0[k])
+        for ins in f.instruments:
+            saldo = ins.B0 + sum(ins.A[s] - ins.P[s] for s in range(k + 1))
+            if ins.H is not None:
+                saldo = min(saldo, ins.H[k])
+            juros += ins.rate * max(0.0, saldo)
+        ded = juros if jur.kappa_I is None else min(juros, jur.kappa_I * max(0.0, pi[k]))
+        jcp_max = max(0.0, 0.5 * reg.LA0, 0.5 * pi[k]) if jur.jcp else 0.0
+        cotas = {"lucro tributável": max(0.0, pi[k]),
+                 "prejuízo fiscal": max(0.0, ded + jcp_max - pi[k])}
+        if jur.jcp:
+            cotas["teto do JCP pelo lucro"] = 0.5 * reg.LA0 - 0.5 * (pi[k] - juros)
+            cotas["teto do JCP pelas reservas"] = 0.5 * pi[k] - 0.5 * reg.LA0
+        for nome, v in cotas.items():
+            if v >= BIG:
+                raise ValueError(f"t={k + 1}: {nome} ({v:g}) atinge BIG = {BIG:g}; reescale os dados")
     for t in range(1, T + 1):
         k = t - 1
         # (1) caixa: C_t − C_{t−1} − Σ D + Σ r B + T_t + Qjcp_t = FCO − K − S − Q + E_future (+ C0 + E0 em t=1)
@@ -181,11 +208,11 @@ def _build(firm: Firm, jur: Jurisdiction, reg: Regime):
         # (4) reserva mínima
         row = np.zeros(n); row[oC + k] = 1.0
         add(row, f.L[k], np.inf, f"floor[{t}]")
-        # juros dedutíveis: Ided_t ≤ I_t = Σ r_j B_{j,t}  (interest_on = 'end')
+        # juros dedutíveis: Ided_t ≤ I_t = Σ r_j B_{j,t} + juros pré-existentes  (interest_on = 'end')
         row = np.zeros(n); row[oId + k] = 1.0
         for j, ins in enumerate(f.instruments):
             row[oB + j * T + k] -= ins.rate
-        add(row, -np.inf, 0.0, f"ided_le_I[{t}]")
+        add(row, -np.inf, 0.0 if reg.interest0 is None else float(reg.interest0[k]), f"ided_le_I[{t}]")
         # (10) limite à dedução de juros: Ided_t ≤ κ_I · max(0, π_t)
         if jur.kappa_I is not None:
             row = np.zeros(n); row[oId + k] = 1.0
@@ -215,8 +242,15 @@ def _build(firm: Firm, jur: Jurisdiction, reg: Regime):
         if jur.jcp:
             row = np.zeros(n); row[oJ + k] = 1.0; row[0] = -jur.r_tjlp
             add(row, -np.inf, jur.r_tjlp * reg.PL0, f"jcp_base[{t}]")
-            row = np.zeros(n); row[oJ + k] = 1.0; row[oId + k] = 0.5; row[oW + k] = BIG
-            add(row, -np.inf, 0.5 * pi[k] + BIG, f"jcp_profit[{t}]")
+            row = np.zeros(n); row[oJ + k] = 1.0; row[oW + k] = BIG
+            rhs = 0.5 * pi[k] + BIG
+            if jur.no_shield:       # Ided = 0, mas o LAJ continua líquido dos juros: o teto do JCP não sobe
+                for j, ins in enumerate(f.instruments):
+                    row[oB + j * T + k] = 0.5 * ins.rate
+                rhs -= 0.0 if reg.interest0 is None else 0.5 * float(reg.interest0[k])
+            else:
+                row[oId + k] = 0.5
+            add(row, -np.inf, rhs, f"jcp_profit[{t}]")
             row = np.zeros(n); row[oJ + k] = 1.0; row[oW + k] = -BIG
             add(row, -np.inf, 0.5 * reg.LA0, f"jcp_reserves[{t}]")
         else:
@@ -258,27 +292,76 @@ def _unpack(f: Firm, L: dict, res, cost_vec=None) -> InstSolution:
                        PF=[float(v) for v in x[L["oPF"]:L["oPF"] + T]],
                        JCP=[float(v) for v in x[L["oJ"]:L["oJ"] + T]],
                        TAX=[float(v) for v in x[L["oT"]:L["oT"] + T]],
-                       instruments=[i.name for i in f.instruments])
+                       instruments=[i.name for i in f.instruments], x=np.asarray(x, dtype=float))
     if cost_vec is not None:
         sol.cost = float(np.dot(cost_vec, x))
     return sol
 
 
-def _milp(c, cons, bounds, integ, presolve: bool = True):
-    """Resolve o MILP; se o presolve do HiGHS falhar, repete sem ele (o presolve pode declarar inviável um problema viável)."""
-    res = milp(c, constraints=cons, bounds=bounds, integrality=integ, options={"presolve": presolve})
-    if presolve and (res.status != 0 or res.x is None):
-        alt = milp(c, constraints=cons, bounds=bounds, integrality=integ, options={"presolve": False})
-        if alt.status == 0 and alt.x is not None:
-            return alt
-    return res
+def _polir(c, cons, bounds, integ, res):
+    """Devolve a candidata com binárias inteiras de fato. O HiGHS aceita binária a até 1e-6 do inteiro e limite violado em até
+    1e-6, e com BIG = 50 isso afrouxa as linhas big-M em até 5e-5. Se a candidata viola algo em mais de 1e-9, as binárias são
+    fixadas e o LP que sobra é resolvido de novo; as que ficaram a mais de 1e-9 do inteiro são testadas nos dois valores.
+    Se o LP polido fica acima do objetivo do HiGHS, a folga escondia outro ramo (uma binária arredondada para o lado errado),
+    e todos os ramos são enumerados, até 12 binárias (T ≤ 6). Acima disso, só os ramos a uma ou duas trocas do arredondado são
+    testados, e um aviso diz que o polimento não está certificado. Fica o menor LP viável (None se nenhum for)."""
+    x = res.x
+    idx = np.flatnonzero(integ > 0)
+    r = np.round(x[idx]); fr = idx[np.abs(x[idx] - r) > 1e-9][:8]
+    Ax = cons.A @ x
+    viol = max(np.max(bounds.lb - x), np.max(x - bounds.ub), np.max(cons.lb - Ax), np.max(Ax - cons.ub), 0.0)
+    if len(fr) == 0 and viol <= 1e-9:
+        return res
+    melhor = None
+    for combo in itertools.product((0.0, 1.0), repeat=len(fr)):
+        lb = bounds.lb.copy(); ub = bounds.ub.copy()
+        lb[idx] = ub[idx] = r
+        lb[fr] = ub[fr] = combo
+        lp = milp(c, constraints=cons, bounds=Bounds(lb, ub))
+        if lp.status == 0 and lp.x is not None and (melhor is None or lp.fun < melhor.fun):
+            melhor = lp
+    if melhor is None or melhor.fun > res.fun + 1e-9:
+        if len(idx) <= 12:
+            ramos = itertools.product((0.0, 1.0), repeat=len(idx))
+        else:
+            ramos = (np.where(np.isin(np.arange(len(idx)), troca), 1.0 - r, r)
+                     for k in (1, 2) for troca in itertools.combinations(range(len(idx)), k))
+        for combo in ramos:
+            lb = bounds.lb.copy(); ub = bounds.ub.copy()
+            lb[idx] = ub[idx] = combo
+            lp = milp(c, constraints=cons, bounds=Bounds(lb, ub))
+            if lp.status == 0 and lp.x is not None and (melhor is None or lp.fun < melhor.fun):
+                melhor = lp
+        if len(idx) > 12 and (melhor is None or melhor.fun > res.fun + 1e-9):
+            warnings.warn(f"{len(idx)} binárias: polimento sem enumeração completa; o LP polido fica "
+                          f"{(melhor.fun - res.fun) if melhor is not None else float('nan'):.2g} acima do objetivo do HiGHS", RuntimeWarning)
+    return melhor
 
 
-def solve_min_equity_inst(firm: Firm, jur: Jurisdiction, reg: Regime, presolve: bool = True) -> InstSolution:
+def _milp(c, cons, bounds, integ):
+    """Resolve o MILP com e sem presolve, com gap zero, pole cada candidata e fica com o menor objetivo. O presolve do HiGHS
+    pode declarar inviável um problema viável ou devolver um falso ótimo (status 0, gap 0, objetivo acima do mínimo); sem o
+    polimento, o menor objetivo seria o da candidata que mais usa a tolerância de integralidade."""
+    integ = np.asarray(integ)
+    primeiro = melhor = bruta = None
+    for presolve in (True, False):
+        res = milp(c, constraints=cons, bounds=bounds, integrality=integ,
+                   options={"presolve": presolve, "mip_rel_gap": 0.0})
+        primeiro = primeiro or res
+        if res.status != 0 or res.x is None:
+            continue
+        bruta = bruta or res
+        lp = _polir(c, cons, bounds, integ, res)
+        if lp is not None and (melhor is None or lp.fun < melhor.fun):
+            melhor = lp
+    return melhor or bruta or primeiro
+
+
+def solve_min_equity_inst(firm: Firm, jur: Jurisdiction, reg: Regime) -> InstSolution:
     """Etapa 1 com camada institucional (eq. 5 do Artigo 2): E* = min E0."""
     f, L, cons, bounds, integ, _ = _build(firm, jur, reg)
     c = np.zeros(L["n"]); c[0] = 1.0
-    return _unpack(f, L, _milp(c, cons, bounds, integ, presolve))
+    return _unpack(f, L, _milp(c, cons, bounds, integ))
 
 
 def cost_vector(f: Firm, L: dict, jur: Jurisdiction, c_E: float) -> np.ndarray:
@@ -299,13 +382,24 @@ def cost_vector(f: Firm, L: dict, jur: Jurisdiction, c_E: float) -> np.ndarray:
     return c
 
 
-def solve_min_cost_inst(firm: Firm, jur: Jurisdiction, reg: Regime, E0_fixed: float, c_E: float) -> InstSolution:
-    """Etapa 2 (eq. 7 do Artigo 2): C* = min custo econômico com E0 = E*(q)."""
+def solve_min_cost_inst(firm: Firm, jur: Jurisdiction, reg: Regime, E0_fixed: float, c_E: float,
+                        x_etapa1: Optional[np.ndarray] = None) -> InstSolution:
+    """Etapa 2 (eq. 7 do Artigo 2): C* = min custo econômico com E0 = E*(q). A solução da etapa 1 (x_etapa1) é viável aqui
+    e entra como candidata, de modo que C* nunca fica acima do custo dela."""
     f, L, cons, bounds, integ, _ = _build(firm, jur, reg)
     c = cost_vector(f, L, jur, c_E)
     lb = bounds.lb.copy(); ub = bounds.ub.copy()
-    lb[0] = E0_fixed - 1e-9; ub[0] = E0_fixed + 1e-9
-    return _unpack(f, L, _milp(c, cons, Bounds(lb, ub), integ), c)
+    lb[0] = E0_fixed - 1e-9
+    for folga in (1e-9, 1e-8, 1e-7, 1e-6, 1e-5):    # se o MILP não fechar com E0 = E*, aceita E0 um pouco acima
+        ub[0] = E0_fixed + folga
+        res = _milp(c, cons, Bounds(lb, ub), integ)
+        if res.status == 0 and res.x is not None:
+            break
+    if x_etapa1 is not None and (res.status != 0 or res.x is None or float(c @ x_etapa1) < res.fun):
+        res = OptimizeResult(status=0, x=x_etapa1, fun=float(c @ x_etapa1)); folga = 0.0
+    sol = _unpack(f, L, res, c)
+    sol.folga = folga if sol.ok() else 0.0
+    return sol
 
 
 @dataclass
@@ -331,19 +425,19 @@ def substitution(firm: Firm, jur: Jurisdiction, reg: Regime, q: float, h_A: Sequ
     j = apply_rules(jur, rules)
     f0 = _firm_with_dip(firm, j, 0.0, h_A)
     fq = _firm_with_dip(firm, j, q, h_A)
-    s0 = solve_min_equity_inst(f0, j, reg)
-    sq = solve_min_equity_inst(fq, j, reg)
-    if s0.ok() and sq.ok() and sq.E0 < s0.E0 - 1e-7:
-        # A retirada só encolhe o conjunto viável (o DIP repõe no máximo o retirado, a custo maior): E*(q) < E*(0)
-        # é erro numérico do presolve, não resultado do modelo.
-        s0 = solve_min_equity_inst(f0, j, reg, presolve=False)
-        sq = solve_min_equity_inst(fq, j, reg, presolve=False)
+    try:
+        s0 = solve_min_equity_inst(f0, j, reg)
+        sq = solve_min_equity_inst(fq, j, reg)
+    except ValueError as e:
+        if "BIG" not in str(e):
+            raise
+        return SubstitutionResult(jur.name, reg.name, rules, q, None, None, None, None, None, None, "erro_BIG", {"erro": str(e)})
     if not (s0.ok() and sq.ok()):
         st = "undefined/infeasible" if "infeasible" in (s0.status, sq.status) else "solver_error"
         return SubstitutionResult(jur.name, reg.name, rules, q, s0.E0, sq.E0, None, None, None, None,
                                   st, {"base": s0.status, "shock": sq.status})
-    c0 = solve_min_cost_inst(f0, j, reg, s0.E0, c_E)
-    cq = solve_min_cost_inst(fq, j, reg, sq.E0, c_E)
+    c0 = solve_min_cost_inst(f0, j, reg, s0.E0, c_E, s0.x)
+    cq = solve_min_cost_inst(fq, j, reg, sq.E0, c_E, sq.x)
     isc = (sq.E0 - s0.E0) / q if q > EPS else None
     cls = (cq.cost - c0.cost) / q if (q > EPS and c0.ok() and cq.ok()) else None
     detail = {"base": s0, "shock": sq, "base_cost": c0, "shock_cost": cq,
@@ -351,6 +445,7 @@ def substitution(firm: Firm, jur: Jurisdiction, reg: Regime, q: float, h_A: Sequ
               "TAX_base": sum(s0.TAX), "TAX_shock": sum(sq.TAX),
               "DIP_shock": (sum(sq.D[1]) if len(sq.D) > 1 else 0.0),
               "status_custo": "ok" if (c0.ok() and cq.ok()) else "erro_etapa2",
+              "folga_custo": max(c0.folga, cq.folga),
               "JCP_custo": sum(cq.JCP) if cq.ok() else None,
               "DIP_custo": (sum(cq.D[1]) if cq.ok() and len(cq.D) > 1 else 0.0 if cq.ok() else None)}
     return SubstitutionResult(jur.name, reg.name, rules, q, s0.E0, sq.E0, isc,

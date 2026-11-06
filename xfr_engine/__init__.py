@@ -21,4 +21,4 @@ __all__ = ["Instrument", "Firm", "solve_min_equity", "solve_min_cost", "Solution
            "derivatives_q", "estar_curve_q", "proposition_checks_q",
            "Jurisdiction", "Regime", "substitution", "SubstitutionResult", "solve_min_equity_inst",
            "solve_min_cost_inst", "default_jurisdictions", "default_regimes", "rules_all_on", "apply_rules"]
-__version__ = "0.4.0"
+__version__ = "0.4.1"

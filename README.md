@@ -23,11 +23,12 @@ test" of Section 9 of the paper (Appendix A describes the implementation).
 | Propositions 1–2, numerical verification on a grid | `metrics.estar_curve`/`proposition_checks` · `directional.estar_curve_q`/`proposition_checks_q` |
 | Section 6.9 terminality and infeasibility diagnosis (minimum relaxation) | `Firm.terminal_repay`, `solver.diagnose_infeasibility` |
 | Section 9.2 closed form `1 − charges/q` | `metrics.closed_form_isc` |
-| Tests of Section 9, Appendix A.1 and the directional form | `tests/` (26 automated cases; 36 with the institutional layer; 43 with the Stage 2 panel) |
+| Tests of Section 9, Appendix A.1 and the directional form | `tests/` (26 automated cases; 36 with the institutional layer; 54 with the Stage 2 panel) |
 | Explanation layer (binding constraints, blocked instruments) | `Solution.binding` |
 
 Solver: linear programming with HiGHS (`scipy.optimize.linprog`). Dependencies: `numpy`, `scipy`;
-`pytest` for the tests.
+`pytest` for the tests; `pandas` and `matplotlib` for the Stage 2 scripts and the figures (`pip install -e ".[etapa2]"`).
+Without pandas, the two tests of the Stage 2 panel builder are skipped.
 
 ## Usage
 
@@ -36,7 +37,7 @@ pip install -e .
 python -m xfr_engine.example_section9                 # reproduces Section 9 and the variants
 python -m xfr_engine.example_section9 --json results/section9.json
 pip install pytest                                    # only needed for the tests
-pytest -q                                             # 43 tests
+pytest -q                                             # 54 tests (2 skipped without pandas)
 ```
 
 ```python
@@ -92,7 +93,7 @@ withdrawn) and the net cost of substitution CLS = [C*(q) − C*(0)]/q (economic 
 
 ```bash
 python -m xfr_engine.experiment_I --out results     # Tables 5–6, hypothesis checks, DIP sweep, figure
-pytest -q                                           # 43 tests
+pytest -q                                           # 54 tests
 ```
 
 Experiment I on the Article 1 synthetic example (results/experiment_I.md): with instruments held fixed, the
@@ -125,6 +126,7 @@ python -m xfr_engine.panel data/panel/painel_BR_US_cf_taxa.csv --out data/panel/
 python -m xfr_engine.panel data/panel/painel_BR_US_troca.csv --out data/panel/experimento_I_troca.csv --c_E 0.10 --jobs 9
 python -m xfr_engine.panel data/panel/painel_BR_US_troca_taxa.csv --out data/panel/experimento_I_troca_taxa.csv --c_E 0.10 --jobs 9
 python scripts/etapa2/sens_dip.py --jobs 9
+python scripts/etapa2/sens_extra.py --jobs 9
 python scripts/etapa2/agrega.py
 ```
 
@@ -132,6 +134,31 @@ Public-data track only: credit lines, covenants and renewal decisions are not ob
 parameterized scenarios and do not validate actual credit withdrawals. Changes to the engine in this version: optional `r_tjlp` and `dip_access` columns
 and `--jobs`/`--configs` in `xfr_engine.panel`; HiGHS is retried without presolve when presolve fails or returns E*(q) < E*(0), a case
 the model cannot produce; JCP and DIP in the panel output come from the cost stage. The synthetic Experiment I is unchanged.
+
+## v0.4.1 — channel fix and complete sensitivities
+
+Solver fixes in `xfr_engine/institutional.py`, found by two independent reviews that enumerated the binary branches exactly: HiGHS with presolve could
+return a false optimum (status 0, gap 0, objective above the minimum), the default MIP gap of 1e-4 could leave E* above its true value, and HiGHS accepts
+binaries and bounds within 1e-6 of feasibility, which BIG = 50 turns into slack of up to 5e-5 in the big-M rows. Every MILP is now solved with and without
+presolve, with zero relative gap; a candidate that is not integral or violates a bound by more than 1e-9 is polished (binaries fixed, the remaining LP
+re-solved, near-fractional binaries tried at both values); if the polished LP ends above the HiGHS objective, the tolerance was hiding
+another branch and all branches are enumerated (up to 12 binaries, T ≤ 6; above that, branches one or two flips away are tried and a
+`RuntimeWarning` says the polish is not certified). The lower polished objective is kept. This replaces the v0.4.0 retry. The stage-1 solution
+enters the cost stage as a candidate, and any E0 slack the cost stage needed is recorded in `folga_custo`. On 8,803 points enumerated exactly, E* and C*
+are within 1e-6 of the exact values (a random draw of 2,500 final panel, shield and pre-existing-interest rows matches to 1e-9); HiGHS keeps an absolute gap of 1e-6, so that is the resolution of E*. The panel, the counterfactuals and every sensitivity were rerun with this solver (about 2.2 million rows): all have
+status `ok`, the one v0.4.0 cost stage without a solution is now solved, one row of the regime-switch counterfactual closed the cost stage with E0 slack
+of 1e-6, and E*(q) falls below E*(0) in 12 rows, by at most 9.2e-7, inside that resolution. In the tables published with v0.4.0, the changes are at most one
+unit in the last printed digit: the share of Brazilian points with ISC > 0 drops by 0.1 point in some configurations of the three terciles
+(for example 33.3% to 33.2% under `all_on`), the upper bound of the H1 interval goes from 0.1965 to 0.1966 in the full sample and from 0.2344
+to 0.2345 in the 2020 stress subsample, the Brazilian break-even mean CLS under `no_loss_cap` in Table 5 goes from 0.0072 to 0.0071, the κ_I share of the break-even
+CLS in Table 6A goes from −0.0000 to −0.0001, and no verdict changes. In the synthetic Experiment I, values move by at most 2e-9, and a few printed
+cells at an exact half flip their last digit (0.5625 now prints as 0.562). The big-M guard covers taxable profit,
+losses, deductible interest and JCP, and `substitution` returns status `erro_BIG` instead of aborting a run; no panel point reaches it. The
+`no_dip_no_shield` counterfactual keeps the JCP ceiling on profit net of the line interest. In `experiment_I.py`, the tax channel is now the effect of switching the tax off: `by_channel` and
+`interaction_residual` no longer count JCP on top of it, which changes them in the profit regime (CES tax channel 0.032, residual −0.105; NCS 0.037, −0.120).
+`scripts/etapa2/sens_extra.py` regenerates, together with `sens_dip.py`, every panel sensitivity read by `agrega.py`, and these are new in `results/panel/tabelas.md`: pre-existing interest deductible
+(`I0` column in `xfr_engine.panel`), the interest shield isolated by `no_dip_no_shield`, the channels without DIP, the JCP effect by loss state, the 0%/100% DIP row,
+the DIP sweep in the NCS, and PF0 for the U.S. points without an observed balance. These analyses are complementary and were not pre-specified.
 
 ## Citation
 
